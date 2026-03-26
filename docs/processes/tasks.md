@@ -130,6 +130,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add a one-command release bundle validator.
   - Result: `npm run release:validate` now verifies `install-ipfs-node.sh`, `install-ipfs-node.sh.sha256`, and `release-manifest.json` together.
 
+### Phase 20: Release Provenance
+- [x] Add GitHub Artifact Attestations for release artifacts.
+  - Result: tagged releases now generate build provenance attestations for the installer bundle through `.github/workflows/release.yml`.
+
 ## Blockers
 - None currently.
 

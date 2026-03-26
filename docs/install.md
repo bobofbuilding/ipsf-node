@@ -121,3 +121,5 @@ npm run release:validate
 Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.
 
 The release manifest includes the package version, release tag, commit SHA, installer SHA-256, and pinned Kubo version.
+
+For provenance, tagged releases also generate GitHub Artifact Attestations for the installer, checksum, and release manifest.

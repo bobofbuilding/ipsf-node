@@ -109,6 +109,8 @@ mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json dist/r
 npm run release:validate
 ```
 
+Tagged releases also generate GitHub Artifact Attestations for the installer bundle through `.github/workflows/release.yml`.
+
 Repo-local setup when `ipfs` is already installed:
 
 ```bash
