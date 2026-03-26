@@ -82,6 +82,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Wire `nftfactory` into the shared package with project-level adapter scripts and shared gateway URL construction.
   - Result: `projects/nftfactory/package.json` now exposes `ipfs:publish` and `ipfs:publish:metadata`; the new scripts use `projects/ipfs-evm-system`, and the web metadata route now builds gateway URLs through the shared helper.
 
+### Phase 10: Cross-Project Smoke Documentation
+- [x] Add one shared smoke-validation guide for the active Bittrees customers.
+  - Result: `docs/smoke-validation.md` now documents publish commands and expected outcomes for `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory`.
+- [x] Add a concrete NFTFactory sample metadata artifact for the smoke path.
+  - Result: `projects/nftfactory/examples/smoke-metadata.json` can be published through `npm run ipfs:publish:metadata`.
+
 ## Blockers
 - None currently.
 

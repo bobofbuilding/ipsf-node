@@ -1,5 +1,8 @@
 # Integrations
 
+See also: `docs/smoke-validation.md` for the cross-project publish commands.
+
+
 ## Crypto Directory
 
 Expected usage:
