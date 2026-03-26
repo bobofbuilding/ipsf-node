@@ -106,6 +106,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add customer filtering support to the smoke runner.
   - Result: operators can now target one customer with `--customer` or a subset with `--customers` instead of always running all four publish paths.
 
+### Phase 15: Installer and Node Setup
+- [x] Add a downloadable macOS/Linux node installer.
+  - Result: `install-ipfs-node.sh` can be downloaded directly from GitHub to install Kubo, initialize a repo, and write helper start/env files.
+- [x] Add a repo-local node setup command.
+  - Result: `npm run node:setup` configures a local repo, API port, gateway port, and default CORS headers when Kubo is already installed.
+
 ## Blockers
 - None currently.
 

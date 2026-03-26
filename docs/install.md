@@ -1,20 +1,46 @@
 # Install
 
-## Required Runtime
+## Downloadable Bootstrap
 
-The shared IPFS project expects a local Kubo installation.
+macOS and Linux operators can install Kubo and initialize a local node directly from GitHub with one downloadable script:
 
-Required binary:
+```bash
+curl -fsSL https://raw.githubusercontent.com/bobofbuilding/ipsf-node/main/install-ipfs-node.sh -o install-ipfs-node.sh
+bash install-ipfs-node.sh
+```
 
-- `ipfs`
+Default install targets:
 
-## Current Environment Status
+- binary: `$HOME/.local/bin/ipfs`
+- helper env file: `$HOME/.local/share/bittrees-ipfs/ipfs-node.env`
+- helper start script: `$HOME/.local/share/bittrees-ipfs/start-ipfs-node.sh`
+- repo path: `$HOME/.bittrees/ipfs-node`
 
-At the time of this update, the workspace did not have a global `ipfs` binary on `PATH`, so Kubo was installed locally at:
+The installer currently supports:
 
-- `/workspace/tools/kubo/ipfs`
+- Linux amd64
+- Linux arm64
+- macOS amd64
+- macOS arm64
 
-The shared IPFS project is now configured to use that path by default.
+## Repo-Local Setup
+
+If Kubo is already available on `PATH` or through `IPFS_CLI_PATH`, configure the repo-managed node with:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run node:setup
+```
+
+Supported setup flags:
+
+- `--cli-path <path-or-command>`
+- `--repo-path <dir>`
+- `--api-port <port>`
+- `--gateway-port <port>`
+- `--profile <name>`
+- `--cors-origin <origin>`
+- `--no-default-cors`
 
 ## Preflight
 
@@ -33,7 +59,7 @@ This checks:
 
 ## Local Start
 
-After installing Kubo:
+After install or setup:
 
 ```bash
 cd /workspace/projects/ipfs-evm-system

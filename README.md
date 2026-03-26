@@ -60,6 +60,8 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `npm run check`
 - `npm run test`
 - `npm run build`
+- `bash -n ./install-ipfs-node.sh`
+- `bash -n ./scripts/start-node.sh`
 
 `npm run build` is the baseline repository verification path and currently runs syntax checks plus gateway-helper, CLI-script, and client-transport tests.
 
@@ -78,8 +80,26 @@ Defaults assume a local Kubo node:
 - API: `http://127.0.0.1:5001`
 - Gateway: `http://127.0.0.1:8080`
 
+## Install and Setup
+
+Downloadable bootstrap for macOS and Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bobofbuilding/ipsf-node/main/install-ipfs-node.sh -o install-ipfs-node.sh
+bash install-ipfs-node.sh
+```
+
+Repo-local setup when `ipfs` is already installed:
+
+```bash
+cd /path/to/ipsf-node
+npm run node:setup
+./scripts/start-node.sh
+```
+
 ## Runtime Scripts
 
+- `npm run node:setup`
 - `npm run node:preflight`
 - `npm run node:wait`
 - `npm run node:check`
@@ -93,6 +113,7 @@ Defaults assume a local Kubo node:
 
 Local startup script:
 
+- `./install-ipfs-node.sh`
 - `./scripts/start-node.sh`
 
 ## Usage Sketch

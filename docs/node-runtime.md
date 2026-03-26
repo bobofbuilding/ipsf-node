@@ -5,8 +5,8 @@
 - IPFS implementation: Kubo
 - API endpoint: `http://127.0.0.1:5001`
 - Gateway endpoint: `http://127.0.0.1:8080`
-- CLI path: `/workspace/tools/kubo/ipfs`
-- Persistent repo path: `/workspace/projects/ipfs-evm-system/.local-ipfs`
+- CLI path: repo-local `.tools/kubo/ipfs`, workspace-local `/workspace/tools/kubo/ipfs`, or `ipfs` on `PATH`
+- Persistent repo path: repo-local `.local-ipfs` unless `IPFS_PATH` overrides it
 
 ## Expected Runtime Shape
 
@@ -42,9 +42,17 @@ Expected result when the node is healthy:
 
 ## Start Command
 
-When Kubo is installed:
+Fresh machine bootstrap:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bobofbuilding/ipsf-node/main/install-ipfs-node.sh -o install-ipfs-node.sh
+bash install-ipfs-node.sh
+```
+
+Repo-local setup when Kubo is already installed:
 
 ```bash
 cd /workspace/projects/ipfs-evm-system
+npm run node:setup
 ./scripts/start-node.sh
 ```

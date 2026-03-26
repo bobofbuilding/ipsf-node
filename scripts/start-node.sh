@@ -1,19 +1,54 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IPFS_CLI_PATH="${IPFS_CLI_PATH:-/workspace/tools/kubo/ipfs}"
-IPFS_REPO_PATH="${IPFS_PATH:-/workspace/projects/ipfs-evm-system/.local-ipfs}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_REPO_PATH="$ROOT_DIR/.local-ipfs"
+REPO_LOCAL_CLI_PATH="$ROOT_DIR/.tools/kubo/ipfs"
+WORKSPACE_CLI_PATH="/workspace/tools/kubo/ipfs"
 
-if [ ! -x "$IPFS_CLI_PATH" ]; then
-  echo "ERROR: ipfs CLI not found at $IPFS_CLI_PATH"
-  exit 1
-fi
+resolve_cli_path() {
+  if [ -n "${IPFS_CLI_PATH:-}" ]; then
+    if [ -x "$IPFS_CLI_PATH" ]; then
+      printf '%s\n' "$IPFS_CLI_PATH"
+      return 0
+    fi
+    if command -v "$IPFS_CLI_PATH" >/dev/null 2>&1; then
+      command -v "$IPFS_CLI_PATH"
+      return 0
+    fi
+    echo "ERROR: configured IPFS_CLI_PATH is not executable: $IPFS_CLI_PATH" >&2
+    return 1
+  fi
+
+  if [ -x "$REPO_LOCAL_CLI_PATH" ]; then
+    printf '%s\n' "$REPO_LOCAL_CLI_PATH"
+    return 0
+  fi
+
+  if [ -x "$WORKSPACE_CLI_PATH" ]; then
+    printf '%s\n' "$WORKSPACE_CLI_PATH"
+    return 0
+  fi
+
+  if command -v ipfs >/dev/null 2>&1; then
+    command -v ipfs
+    return 0
+  fi
+
+  echo "ERROR: ipfs CLI not found. Run ./install-ipfs-node.sh or set IPFS_CLI_PATH." >&2
+  return 1
+}
+
+IPFS_CLI_PATH="$(resolve_cli_path)"
+IPFS_REPO_PATH="${IPFS_PATH:-$DEFAULT_REPO_PATH}"
 
 export IPFS_PATH="$IPFS_REPO_PATH"
 
-if [ ! -d "$IPFS_REPO_PATH" ]; then
+if [ ! -f "$IPFS_REPO_PATH/config" ]; then
   echo "Initializing IPFS repo at $IPFS_REPO_PATH"
-  "$IPFS_CLI_PATH" init
+  mkdir -p "$IPFS_REPO_PATH"
+  "$IPFS_CLI_PATH" init --profile=server
 fi
 
 echo "Starting shared IPFS node from $IPFS_REPO_PATH"
