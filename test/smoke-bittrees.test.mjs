@@ -1,7 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { extractJsonObject, summarizeSmokeOutput } from "../scripts/smoke-bittrees.mjs";
+import {
+  buildSmokeReport,
+  extractJsonObject,
+  parseSmokeArgs,
+  summarizeSmokeOutput,
+} from "../scripts/smoke-bittrees.mjs";
+
+test("parseSmokeArgs detects json mode", () => {
+  assert.deepEqual(parseSmokeArgs([]), { json: false });
+  assert.deepEqual(parseSmokeArgs(["--json"]), { json: true });
+});
 
 test("extractJsonObject returns trailing JSON payload from noisy output", () => {
   const payload = extractJsonObject('> npm run something\nnoise\n{\n  "cid": "bafy123",\n  "gatewayUrl": "http://127.0.0.1:8080/ipfs/bafy123"\n}\n');
@@ -55,4 +65,19 @@ test("summarizeSmokeOutput preserves failing exit code", () => {
   assert.equal(summary.ok, false);
   assert.equal(summary.exitCode, 1);
   assert.equal(summary.cid, null);
+});
+
+test("buildSmokeReport produces machine-readable summary shape", () => {
+  const report = buildSmokeReport(
+    { available: true, version: "0.30.0", id: "node-123" },
+    [
+      { customer: "crypto-directory", ok: true, cid: "bafy1" },
+      { customer: "skillmesh", ok: false, cid: null },
+    ],
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.node.version, "0.30.0");
+  assert.equal(report.customers.length, 2);
+  assert.equal(typeof report.checkedAt, "string");
 });

@@ -13,6 +13,15 @@ npm run smoke:bittrees
 
 The script runs the four customer publish commands in sequence and prints one summary with CID, pin, and gateway results.
 
+Machine-readable mode:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run smoke:bittrees -- --json
+```
+
+This prints a single JSON report with node health and one result object per customer.
+
 ## Preconditions
 
 - the shared Kubo node is reachable through the configured API and gateway URLs

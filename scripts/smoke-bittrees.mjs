@@ -36,6 +36,12 @@ function trimLine(value) {
   return String(value ?? "").trim();
 }
 
+export function parseSmokeArgs(argv = process.argv.slice(2)) {
+  return {
+    json: argv.includes("--json"),
+  };
+}
+
 export function extractJsonObject(output) {
   for (let index = output.lastIndexOf("{"); index >= 0; index = output.lastIndexOf("{", index - 1)) {
     const candidate = output.slice(index).trim();
@@ -71,8 +77,7 @@ export function summarizeSmokeOutput(customerName, output, exitCode) {
         typeof json.health?.available === "boolean"
           ? json.health.available
           : null,
-      gatewayUrl:
-        trimLine(json.gatewayUrl ?? json.metadataGatewayUrl ?? "") || null,
+      gatewayUrl: trimLine(json.gatewayUrl ?? json.metadataGatewayUrl ?? "") || null,
       artifactKind: trimLine(json.artifactKind ?? "") || null,
       rawOutput: normalized,
     };
@@ -97,6 +102,20 @@ export function summarizeSmokeOutput(customerName, output, exitCode) {
   };
 }
 
+export function buildSmokeReport(nodeHealth, results) {
+  return {
+    ok: results.every((result) => result.ok),
+    checkedAt: new Date().toISOString(),
+    node: {
+      available: nodeHealth.available,
+      version: nodeHealth.version ?? null,
+      id: nodeHealth.id ?? null,
+      error: nodeHealth.error ?? null,
+    },
+    customers: results,
+  };
+}
+
 function printSummary(results, stdout = console.log) {
   stdout("");
   stdout("Bittrees smoke summary:");
@@ -114,7 +133,11 @@ function printSummary(results, stdout = console.log) {
   }
 }
 
-export async function runCustomerCommand(customer, { stdout = console.log, stderr = console.error } = {}) {
+export async function runCustomerCommand(customer, {
+  stdout = console.log,
+  stderr = console.error,
+  streamOutput = true,
+} = {}) {
   stdout("");
   stdout(`==> ${customer.name}`);
   stdout(`cwd: ${customer.cwd}`);
@@ -132,13 +155,17 @@ export async function runCustomerCommand(customer, { stdout = console.log, stder
     child.stdout.on("data", (chunk) => {
       const text = chunk.toString();
       combined += text;
-      process.stdout.write(text);
+      if (streamOutput) {
+        process.stdout.write(text);
+      }
     });
 
     child.stderr.on("data", (chunk) => {
       const text = chunk.toString();
       combined += text;
-      process.stderr.write(text);
+      if (streamOutput) {
+        process.stderr.write(text);
+      }
     });
 
     child.on("close", (code) => {
@@ -162,33 +189,56 @@ export async function runCustomerCommand(customer, { stdout = console.log, stder
   });
 }
 
-export async function runSmokeBittrees({ stdout = console.log, stderr = console.error } = {}) {
+export async function runSmokeBittrees({
+  stdout = console.log,
+  stderr = console.error,
+  json = false,
+} = {}) {
   const client = new IpfsStorageClient(getIpfsStorageConfig());
   const nodeHealth = await client.checkNodeHealth();
 
   if (!nodeHealth.available) {
-    stderr("ipfs-node:unavailable");
-    if (nodeHealth.error) {
-      stderr(nodeHealth.error);
+    if (json) {
+      const report = buildSmokeReport(nodeHealth, []);
+      stdout(JSON.stringify(report, null, 2));
+    } else {
+      stderr("ipfs-node:unavailable");
+      if (nodeHealth.error) {
+        stderr(nodeHealth.error);
+      }
     }
     return 1;
   }
 
-  stdout("ipfs-node:available");
-  stdout(`version=${nodeHealth.version ?? "unknown"}`);
-  stdout(`id=${nodeHealth.id ?? "unknown"}`);
+  if (!json) {
+    stdout("ipfs-node:available");
+    stdout(`version=${nodeHealth.version ?? "unknown"}`);
+    stdout(`id=${nodeHealth.id ?? "unknown"}`);
+  }
 
   const results = [];
   for (const customer of BITTREES_CUSTOMERS) {
-    results.push(await runCustomerCommand(customer, { stdout, stderr }));
+    results.push(await runCustomerCommand(customer, {
+      stdout,
+      stderr,
+      streamOutput: !json,
+    }));
   }
 
-  printSummary(results, stdout);
-  return results.every((result) => result.ok) ? 0 : 1;
+  const report = buildSmokeReport(nodeHealth, results);
+
+  if (json) {
+    stdout(JSON.stringify(report, null, 2));
+  } else {
+    printSummary(results, stdout);
+  }
+
+  return report.ok ? 0 : 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const exitCode = await runSmokeBittrees();
+  const options = parseSmokeArgs();
+  const exitCode = await runSmokeBittrees(options);
   if (exitCode !== 0) {
     process.exitCode = exitCode;
   }

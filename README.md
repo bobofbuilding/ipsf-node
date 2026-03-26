@@ -86,6 +86,7 @@ Defaults assume a local Kubo node:
 - `npm run recovery:export -- [output-dir]`
 - `npm run publish:path -- <path> [source-project]`
 - `npm run smoke:bittrees`
+  JSON mode: `npm run smoke:bittrees -- --json`
 
 Local startup script:
 

@@ -94,6 +94,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add parser tests for smoke output normalization.
   - Result: `test/smoke-bittrees.test.mjs` now covers JSON-style and line-oriented customer output parsing.
 
+### Phase 12: Smoke JSON Output
+- [x] Add a machine-readable `--json` mode to `smoke:bittrees`.
+  - Result: the smoke runner can now emit one JSON report with node health and customer results for CI or ops tooling.
+
 ## Blockers
 - None currently.
 
