@@ -12,15 +12,16 @@ Build `ipfs-evm-system` as the shared IPFS storage project for the workspace:
 
 - run and operate a shared IPFS node
 - publish, pin, and resolve content through a reusable shared library
-- support `crypto-directory`, `skillmesh`, and `bitlogic` through one small integration surface
+- support `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory` through one small integration surface
 - package the project cleanly enough to live as its own GitHub repository without carrying local workspace noise
 
-## Intended Consumers
+## Active Bittrees Customers
 
 - `crypto-directory` for static site release publishing
 - `skillmesh` for skill-definition and artifact storage
 - `bitlogic` for document, export, and audit-evidence storage
-- future projects that need immutable file or content storage
+- `nftfactory` for NFT media, metadata, and release artifact storage
+- future Bittrees and workspace projects that need immutable file or content storage
 
 ## Scope
 
@@ -31,7 +32,7 @@ In scope:
 - a shared library for publish, pin, and resolve operations
 - health checks, backup pinning, and basic operations
 - package metadata, export shape, and test coverage for the shared library
-- integration notes for `crypto-directory`, `skillmesh`, and `bitlogic`
+- integration notes for `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory`
 
 Out of scope for now:
 
@@ -126,6 +127,20 @@ Keeps local ownership of:
 - access rules and product logic
 - any later encryption or retrieval rules specific to bookkeeping data
 
+### `nftfactory`
+
+Uses the shared library to:
+
+- publish NFT metadata JSON artifacts
+- publish prepared media or release-supporting assets
+- build consistent gateway URLs for uploaded media and metadata
+
+Keeps local ownership of:
+
+- mint flow and upload policy
+- app-level auth for public IPFS API ingress
+- contract metadata semantics and storefront behavior
+
 ## First Executable Milestone
 
 The first milestone is a repository-ready shared IPFS storage project that includes:
@@ -135,7 +150,7 @@ The first milestone is a repository-ready shared IPFS storage project that inclu
 - pinning and health-check operations
 - basic tests for the public gateway helpers
 - package metadata and types for downstream consumers
-- integration notes for `crypto-directory`, `skillmesh`, and `bitlogic`
+- integration notes for `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory`
 
 ## Phased Delivery
 
@@ -165,6 +180,7 @@ The first milestone is a repository-ready shared IPFS storage project that inclu
 - map `crypto-directory` site publishing into the shared library
 - map `skillmesh` artifact publishing and resolution into the shared library
 - map `bitlogic` document and export storage into the shared library
+- map `nftfactory` metadata and asset publishing into the shared library
 
 ### Phase 4: Repository and Build Readiness
 
@@ -190,6 +206,6 @@ The first milestone is a repository-ready shared IPFS storage project that inclu
 ## Success Criteria
 
 - The IPFS project reads like shared storage infrastructure, not a separate product.
-- `crypto-directory`, `skillmesh`, and `bitlogic` can all plug into it through one shared library.
+- `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory` can all plug into it through one shared library.
 - The public gateway helpers resolve to valid `/ipfs/<cid>` URLs.
 - The project can be pushed as a standalone GitHub repo without local node state or recovery dumps in version control.

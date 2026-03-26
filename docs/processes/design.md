@@ -16,7 +16,7 @@ It should provide:
 - a shared JavaScript library for publish, pin, and resolve operations
 - TypeScript declarations for consumer projects
 - operational monitoring and recovery basics
-- simple integration patterns for other projects
+- simple integration patterns for other Bittrees and workspace projects
 - a minimal build and test path so the repo can stand alone on GitHub
 
 It should not become a separate application with its own large product surface.
@@ -64,6 +64,20 @@ Keeps local ownership of:
 - accounting workflows
 - product access rules
 - any later privacy or encryption rules
+
+### NFTFactory
+
+Uses the shared IPFS library to:
+
+- publish NFT metadata JSON artifacts
+- publish prepared media or drop-supporting assets
+- reuse shared gateway URL construction and publish/pin helpers
+
+Keeps local ownership of:
+
+- minting UX and server-side upload policy
+- authenticated IPFS ingress configuration
+- contract metadata and storefront behavior
 
 ## 4. Core System Components
 
@@ -249,7 +263,7 @@ The first implementation should prioritize simplicity:
 - keep the node running
 - keep the shared library stable
 - keep gateway helpers correct and tested
-- wire `crypto-directory`, `skillmesh`, and `bitlogic` into it at the integration level
+- wire `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory` into it at the integration level
 - keep git state clean by ignoring local node and recovery outputs
 
 Defer:
@@ -262,4 +276,4 @@ Defer:
 
 ## 12. Summary
 
-`ipfs-evm-system` should be the workspace storage utility for IPFS. It runs the node, exposes a small shared library for publish and resolve operations, includes enough package and test structure for downstream use, and supports `crypto-directory`, `skillmesh`, `bitlogic`, and future projects without taking over their workflows.
+`ipfs-evm-system` should be the workspace storage utility for IPFS. It runs the node, exposes a small shared library for publish and resolve operations, includes enough package and test structure for downstream use, and supports `crypto-directory`, `skillmesh`, `bitlogic`, `nftfactory`, and future projects without taking over their workflows.

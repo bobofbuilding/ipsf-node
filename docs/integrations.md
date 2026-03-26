@@ -40,3 +40,19 @@ Expected usage:
 Current entrypoint:
 
 - `cd /workspace/projects/bitlogic && npm run ipfs:publish -- <path> [artifact-kind]`
+
+
+## NFTFactory
+
+Expected usage:
+
+- prepare NFT metadata JSON or drop-supporting assets locally
+- publish prepared files through the shared library or the project adapter scripts
+- build gateway URLs through the shared gateway helper for consistent `/ipfs/<cid>` resolution
+- keep upload auth, mint flow, and storefront behavior in `nftfactory`
+
+Current entrypoints:
+
+- `cd /workspace/projects/nftfactory && npm run ipfs:publish -- <path> [artifact-kind]`
+- `cd /workspace/projects/nftfactory && npm run ipfs:publish:metadata -- <metadata-json-path> [artifact-kind]`
+- `projects/nftfactory/apps/web/app/api/ipfs/metadata/route.ts` now uses the shared gateway helper for returned gateway URLs

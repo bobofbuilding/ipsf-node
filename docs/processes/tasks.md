@@ -30,10 +30,11 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Fix the public gateway helper contract so exported URLs resolve to `/ipfs/<cid>` paths.
   - Result: `src/gateway.js` now normalizes `ipfs://`, `/ipfs/`, and `ipfs/` inputs and always builds `/ipfs/<cid>` gateway URLs.
 
-### Phase 3: Consumer Integrations
+### Phase 3: Customer Integrations
 - [x] Define how `crypto-directory` hands built site artifacts to the shared library.
 - [x] Define how `skillmesh` publishes skill definitions and artifacts through the shared library.
 - [x] Define how `bitlogic` publishes artifacts through the shared library.
+- [x] Define how `nftfactory` publishes metadata and prepared assets through the shared library.
 - [x] Keep durable CID records, release notes, and product policy local to the consuming projects.
 
 ### Phase 4: Build and Package Readiness
@@ -75,6 +76,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add mocked transport tests for the shared IPFS client RPC contract.
   - Result: `test/client.test.mjs` now covers `publishFile`, `publishDirectory`, `publishJson`, `pinCid`, `unpinCid`, `checkCidHealth`, `resolveCid`, `checkNodeHealth`, and `ensurePinned` with mocked fetch responses.
 
+### Phase 9: Bittrees Customer Expansion
+- [x] Add `nftfactory` to the active Bittrees customer list for the shared IPFS package.
+  - Result: the plan, design, README, integration docs, and task boards now treat `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory` as the active Bittrees customer set.
+- [x] Wire `nftfactory` into the shared package with project-level adapter scripts and shared gateway URL construction.
+  - Result: `projects/nftfactory/package.json` now exposes `ipfs:publish` and `ipfs:publish:metadata`; the new scripts use `projects/ipfs-evm-system`, and the web metadata route now builds gateway URLs through the shared helper.
+
 ## Blockers
 - None currently.
 
@@ -91,6 +98,7 @@ Design-impact review result: the current board now needs to track repository/bui
 - `projects/crypto-directory` for static-site publishing
 - `projects/skillmesh` for artifact publishing and resolution
 - `projects/bitlogic` for report, export, and evidence storage integration
+- `projects/nftfactory` for NFT metadata and media storage integration
 - local Kubo availability for runtime validation
 - GitHub repository access for repository publication
 

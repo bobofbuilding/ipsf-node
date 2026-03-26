@@ -12,12 +12,13 @@ Its job is simple:
 
 It is infrastructure for the other projects, not a separate product.
 
-## Planned Consumers
+## Active Bittrees Customers
 
 - `projects/crypto-directory`
 - `projects/skillmesh`
 - `projects/bitlogic`
-- future workspace projects that need content storage
+- `projects/nftfactory`
+- future Bittrees and workspace projects that need content storage
 
 ## Related Artifacts
 
