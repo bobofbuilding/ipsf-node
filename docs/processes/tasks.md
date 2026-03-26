@@ -134,6 +134,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add GitHub Artifact Attestations for release artifacts.
   - Result: tagged releases now generate build provenance attestations for the installer bundle through `.github/workflows/release.yml`.
 
+### Phase 21: Release Verification Runbook
+- [x] Add an operator runbook for tagged release verification.
+  - Result: `docs/release-verification.md` now walks through checksum verification, `release:validate`, and GitHub attestation review for a downloaded release bundle.
+
 ## Blockers
 - None currently.
 

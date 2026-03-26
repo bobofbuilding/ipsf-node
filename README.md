@@ -111,6 +111,8 @@ npm run release:validate
 
 Tagged releases also generate GitHub Artifact Attestations for the installer bundle through `.github/workflows/release.yml`.
 
+Full operator runbook: `docs/release-verification.md`
+
 Repo-local setup when `ipfs` is already installed:
 
 ```bash

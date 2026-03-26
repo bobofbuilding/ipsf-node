@@ -123,3 +123,5 @@ Tagged pushes matching `v*` publish the installer and checksum through `.github/
 The release manifest includes the package version, release tag, commit SHA, installer SHA-256, and pinned Kubo version.
 
 For provenance, tagged releases also generate GitHub Artifact Attestations for the installer, checksum, and release manifest.
+
+Full step-by-step verification is documented in `docs/release-verification.md`.
