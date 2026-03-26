@@ -118,6 +118,7 @@ npm run release:prepare
 npm run release:validate
 npm run release:verify-download -- --tag v0.1.0
 npm run release:verify-download -- --json
+npm run release:verify-download -- --json --report-file dist/release/verify-report.json
 ```
 
 Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.

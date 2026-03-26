@@ -108,6 +108,7 @@ One-command bundle download and validation:
 ```bash
 npm run release:verify-download -- --tag v0.1.0
 npm run release:verify-download -- --json
+npm run release:verify-download -- --json --report-file dist/release/verify-report.json
 ```
 
 Manual bundle validation after download:

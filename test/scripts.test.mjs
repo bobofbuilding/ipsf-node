@@ -345,6 +345,55 @@ test("runReleaseDownloadVerification emits machine-readable success output", asy
   assert.equal(payload.validation.installer, '/tmp/verify-download-json/install-ipfs-node.sh');
 });
 
+test("runReleaseDownloadVerification writes a JSON report file when requested", async () => {
+  const writes = new Map();
+  const out = [];
+  const installer = Buffer.from('#!/usr/bin/env bash\necho ok\n');
+  const sha = '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be';
+  const responses = new Map([
+    ['https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh', installer],
+    ['https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256', Buffer.from(sha + '  install-ipfs-node.sh\n')],
+    ['https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json', Buffer.from(JSON.stringify({
+      installerFile: 'install-ipfs-node.sh',
+      checksumFile: 'install-ipfs-node.sh.sha256',
+      installerSha256: sha,
+    }))],
+  ]);
+
+  const exitCode = await runReleaseDownloadVerification({
+    argv: ['--json', '--output-dir', '/tmp/verify-download-report', '--report-file', '/tmp/verify-download-report/report.json'],
+    fetchImpl: async (url) => ({
+      ok: responses.has(url),
+      arrayBuffer: async () => responses.get(url),
+    }),
+    mkdirImpl: async () => {},
+    writeFileImpl: async (filePath, contents) => {
+      writes.set(filePath, contents);
+    },
+    validateReleaseImpl: (options) => runReleaseValidation({
+      ...options,
+      readFileImpl: async (filePath, encoding) => {
+        const value = writes.get(filePath);
+        if (value === undefined) {
+          throw new Error('Missing mocked file: ' + filePath);
+        }
+        if (encoding) {
+          return value.toString(encoding);
+        }
+        return value;
+      },
+    }),
+    stdout: (line) => out.push(line),
+    stderr: () => {},
+  });
+
+  assert.equal(exitCode, 0);
+  const stdoutPayload = JSON.parse(out[0]);
+  const filePayload = JSON.parse(writes.get('/tmp/verify-download-report/report.json').toString('utf8'));
+  assert.deepEqual(filePayload, stdoutPayload);
+  assert.equal(filePayload.reportFile, '/tmp/verify-download-report/report.json');
+});
+
 test("runPublishPath rejects missing argv path", async () => {
   const err = [];
   const exitCode = await runPublishPath({

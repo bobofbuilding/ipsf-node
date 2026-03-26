@@ -19,12 +19,22 @@ function parseArgs(argv) {
     releaseVersion: "latest",
     outputDir: path.join(rootDir, "dist", "release"),
     json: false,
+    reportFile: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--json") {
       options.json = true;
+      continue;
+    }
+    if (token === "--report-file") {
+      options.reportFile = path.resolve(argv[index + 1] || options.outputDir);
+      index += 1;
+      continue;
+    }
+    if (token.startsWith("--report-file=")) {
+      options.reportFile = path.resolve(token.slice("--report-file=".length) || options.outputDir);
       continue;
     }
     if (token === "--tag") {
@@ -68,6 +78,14 @@ function parseKeyValueLine(line) {
   };
 }
 
+async function emitJsonResult(payload, { options, stdout, writeFileImpl }) {
+  const jsonText = JSON.stringify(payload, null, 2);
+  if (options.reportFile) {
+    await writeFileImpl(options.reportFile, jsonText + "\n");
+  }
+  stdout(jsonText);
+}
+
 export async function runReleaseDownloadVerification({
   argv = process.argv.slice(2),
   fetchImpl = globalThis.fetch,
@@ -81,12 +99,13 @@ export async function runReleaseDownloadVerification({
 
   if (typeof fetchImpl !== "function") {
     if (options.json) {
-      stdout(JSON.stringify({
+      await emitJsonResult({
         ok: false,
         releaseVersion: options.releaseVersion,
         outputDir: options.outputDir,
+        reportFile: options.reportFile,
         error: "Fetch API is not available in this Node runtime",
-      }, null, 2));
+      }, { options, stdout, writeFileImpl });
     } else {
       stderr("release-download:invalid");
       stderr("Fetch API is not available in this Node runtime");
@@ -135,17 +154,18 @@ export async function runReleaseDownloadVerification({
 
     if (exitCode !== 0) {
       if (options.json) {
-        stdout(JSON.stringify({
+        await emitJsonResult({
           ok: false,
           releaseVersion: options.releaseVersion,
           outputDir: options.outputDir,
+          reportFile: options.reportFile,
           downloadedFiles,
           validation: {
             ok: false,
             stdout: validationOut,
             stderr: validationErr,
           },
-        }, null, 2));
+        }, { options, stdout, writeFileImpl });
       }
       return exitCode;
     }
@@ -157,10 +177,11 @@ export async function runReleaseDownloadVerification({
           .filter(Boolean)
           .map((entry) => [entry.key, entry.value]),
       );
-      stdout(JSON.stringify({
+      await emitJsonResult({
         ok: true,
         releaseVersion: options.releaseVersion,
         outputDir: options.outputDir,
+        reportFile: options.reportFile,
         downloadedFiles,
         validation: {
           ok: true,
@@ -170,7 +191,7 @@ export async function runReleaseDownloadVerification({
           manifest: validationFields.manifest ?? null,
           sha256: validationFields.sha256 ?? null,
         },
-      }, null, 2));
+      }, { options, stdout, writeFileImpl });
     } else {
       stdout("release-download:verified");
       stdout("releaseVersion=" + options.releaseVersion);
@@ -179,13 +200,14 @@ export async function runReleaseDownloadVerification({
     return 0;
   } catch (error) {
     if (options.json) {
-      stdout(JSON.stringify({
+      await emitJsonResult({
         ok: false,
         releaseVersion: options.releaseVersion,
         outputDir: options.outputDir,
+        reportFile: options.reportFile,
         downloadedFiles,
         error: error.message,
-      }, null, 2));
+      }, { options, stdout, writeFileImpl });
     } else {
       stderr("release-download:invalid");
       stderr(error.message);
