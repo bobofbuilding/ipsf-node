@@ -88,6 +88,8 @@ Defaults assume a local Kubo node:
 - `npm run smoke:bittrees`
   JSON mode: `npm run smoke:bittrees -- --json`
   Continue on error: `npm run smoke:bittrees -- --continue-on-error`
+  Single customer: `npm run smoke:bittrees -- --customer nftfactory`
+  Multiple customers: `npm run smoke:bittrees -- --customers skillmesh,nftfactory`
 
 Local startup script:
 

@@ -6,13 +6,34 @@ import {
   extractJsonObject,
   parseSmokeArgs,
   runSmokeBittrees,
+  selectCustomers,
   summarizeSmokeOutput,
 } from "../scripts/smoke-bittrees.mjs";
 
-test("parseSmokeArgs detects json mode and continue-on-error", () => {
-  assert.deepEqual(parseSmokeArgs([]), { json: false, continueOnError: false });
-  assert.deepEqual(parseSmokeArgs(["--json"]), { json: true, continueOnError: true });
-  assert.deepEqual(parseSmokeArgs(["--continue-on-error"]), { json: false, continueOnError: true });
+test("parseSmokeArgs detects json mode, continue-on-error, and selected customers", () => {
+  assert.deepEqual(parseSmokeArgs([]), { json: false, continueOnError: false, selectedCustomers: [] });
+  assert.deepEqual(parseSmokeArgs(["--json"]), { json: true, continueOnError: true, selectedCustomers: [] });
+  assert.deepEqual(parseSmokeArgs(["--continue-on-error"]), { json: false, continueOnError: true, selectedCustomers: [] });
+  assert.deepEqual(parseSmokeArgs(["--customer", "nftfactory"]), {
+    json: false,
+    continueOnError: false,
+    selectedCustomers: ["nftfactory"],
+  });
+  assert.deepEqual(parseSmokeArgs(["--customers=skillmesh,nftfactory"]), {
+    json: false,
+    continueOnError: false,
+    selectedCustomers: ["skillmesh", "nftfactory"],
+  });
+});
+
+test("selectCustomers filters known customer names and reports invalid ones", () => {
+  const { selected, invalid } = selectCustomers(
+    [{ name: "crypto-directory" }, { name: "nftfactory" }],
+    ["nftfactory", "missing"],
+  );
+
+  assert.deepEqual(selected, [{ name: "nftfactory" }]);
+  assert.deepEqual(invalid, ["missing"]);
 });
 
 test("extractJsonObject returns trailing JSON payload from noisy output", () => {
@@ -120,4 +141,42 @@ test("runSmokeBittrees continues across failures when requested", async () => {
 
   assert.equal(exitCode, 1);
   assert.deepEqual(seen, ["one", "two"]);
+});
+
+test("runSmokeBittrees limits execution to selected customers", async () => {
+  const seen = [];
+  const exitCode = await runSmokeBittrees({
+    json: true,
+    selectedCustomers: ["two"],
+    stdout: () => {},
+    stderr: () => {},
+    client: { checkNodeHealth: async () => ({ available: true, version: "0.30.0", id: "node-123" }) },
+    customers: [{ name: "one" }, { name: "two" }],
+    runCustomer: async (customer) => {
+      seen.push(customer.name);
+      return { customer: customer.name, ok: true, exitCode: 0 };
+    },
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(seen, ["two"]);
+});
+
+test("runSmokeBittrees rejects unknown selected customers", async () => {
+  const output = [];
+  const exitCode = await runSmokeBittrees({
+    json: true,
+    selectedCustomers: ["missing"],
+    stdout: (line) => output.push(line),
+    stderr: () => {},
+    client: { checkNodeHealth: async () => ({ available: true, version: "0.30.0", id: "node-123" }) },
+    customers: [{ name: "one" }, { name: "two" }],
+    runCustomer: async () => {
+      throw new Error("should not run");
+    },
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(output.length, 1);
+  assert.match(output[0], /unknown customers: missing/);
 });

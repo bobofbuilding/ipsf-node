@@ -102,6 +102,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add `--continue-on-error` support to the smoke runner.
   - Result: operators can now collect a full four-customer smoke report even when one customer fails.
 
+### Phase 14: Smoke Customer Selection
+- [x] Add customer filtering support to the smoke runner.
+  - Result: operators can now target one customer with `--customer` or a subset with `--customers` instead of always running all four publish paths.
+
 ## Blockers
 - None currently.
 

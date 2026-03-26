@@ -36,13 +36,66 @@ function trimLine(value) {
   return String(value ?? "").trim();
 }
 
+function parseCustomerNames(value) {
+  return String(value ?? "")
+    .split(",")
+    .map((entry) => trimLine(entry))
+    .filter(Boolean);
+}
+
 export function parseSmokeArgs(argv = process.argv.slice(2)) {
   const json = argv.includes("--json");
   const continueOnError = argv.includes("--continue-on-error") || json;
+  const selectedCustomers = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--customer") {
+      selectedCustomers.push(...parseCustomerNames(argv[index + 1] ?? ""));
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--customer=")) {
+      selectedCustomers.push(...parseCustomerNames(arg.slice("--customer=".length)));
+      continue;
+    }
+
+    if (arg === "--customers") {
+      selectedCustomers.push(...parseCustomerNames(argv[index + 1] ?? ""));
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--customers=")) {
+      selectedCustomers.push(...parseCustomerNames(arg.slice("--customers=".length)));
+    }
+  }
 
   return {
     json,
     continueOnError,
+    selectedCustomers,
+  };
+}
+
+export function selectCustomers(customers, selectedCustomers) {
+  const requested = Array.from(new Set((selectedCustomers ?? []).map((name) => trimLine(name)).filter(Boolean)));
+
+  if (requested.length === 0) {
+    return {
+      selected: customers,
+      invalid: [],
+    };
+  }
+
+  const selected = customers.filter((customer) => requested.includes(customer.name));
+  const invalid = requested.filter((name) => !customers.some((customer) => customer.name === name));
+
+  return {
+    selected,
+    invalid,
   };
 }
 
@@ -198,10 +251,33 @@ export async function runSmokeBittrees({
   stderr = console.error,
   json = false,
   continueOnError = json,
+  selectedCustomers = [],
   client = new IpfsStorageClient(getIpfsStorageConfig()),
   customers = BITTREES_CUSTOMERS,
   runCustomer = runCustomerCommand,
 } = {}) {
+  const { selected, invalid } = selectCustomers(customers, selectedCustomers);
+
+  if (invalid.length > 0) {
+    const message = `unknown customers: ${invalid.join(", ")}`;
+    if (json) {
+      stdout(JSON.stringify({
+        ok: false,
+        checkedAt: new Date().toISOString(),
+        node: {
+          available: null,
+          version: null,
+          id: null,
+          error: message,
+        },
+        customers: [],
+      }, null, 2));
+    } else {
+      stderr(message);
+    }
+    return 1;
+  }
+
   const nodeHealth = await client.checkNodeHealth();
 
   if (!nodeHealth.available) {
@@ -224,7 +300,7 @@ export async function runSmokeBittrees({
   }
 
   const results = [];
-  for (const customer of customers) {
+  for (const customer of selected) {
     const result = await runCustomer(customer, {
       stdout,
       stderr,

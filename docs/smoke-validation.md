@@ -29,6 +29,20 @@ cd /workspace/projects/ipfs-evm-system
 npm run smoke:bittrees -- --continue-on-error
 ```
 
+To run only one customer:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run smoke:bittrees -- --customer nftfactory
+```
+
+To run a subset:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run smoke:bittrees -- --customers skillmesh,nftfactory
+```
+
 ## Preconditions
 
 - the shared Kubo node is reachable through the configured API and gateway URLs
