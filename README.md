@@ -63,6 +63,7 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `bash -n ./install-ipfs-node.sh`
 - `bash -n ./scripts/start-node.sh`
 - `npm run release:prepare`
+- `npm run release:validate`
 
 `npm run build` is the baseline repository verification path and currently runs syntax checks plus gateway-helper, CLI-script, and client-transport tests.
 
@@ -98,6 +99,14 @@ curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/i
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json -o release-manifest.json
 shasum -a 256 -c install-ipfs-node.sh.sha256
 bash install-ipfs-node.sh
+```
+
+Bundle validation after download:
+
+```bash
+mkdir -p dist/release
+mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json dist/release/
+npm run release:validate
 ```
 
 Repo-local setup when `ipfs` is already installed:

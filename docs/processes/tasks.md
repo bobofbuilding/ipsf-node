@@ -126,6 +126,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add a machine-readable release manifest to packaged installer artifacts.
   - Result: `npm run release:prepare` now also generates `dist/release/release-manifest.json` with package version, release tag, commit SHA, installer SHA, and Kubo version.
 
+### Phase 19: Release Validation
+- [x] Add a one-command release bundle validator.
+  - Result: `npm run release:validate` now verifies `install-ipfs-node.sh`, `install-ipfs-node.sh.sha256`, and `release-manifest.json` together.
+
 ## Blockers
 - None currently.
 

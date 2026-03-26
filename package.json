@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build": "npm run check && npm run test",
-    "check": "node --check src/index.js && node --check src/client.js && node --check src/config.js && node --check src/gateway.js && node --check src/files.js && node --check src/artifacts.js && node --check scripts/check-node.mjs && node --check scripts/export-recovery-artifacts.mjs && node --check scripts/publish-path.mjs && node --check scripts/release-installer.mjs && node --check scripts/preflight-node.mjs && node --check scripts/setup-node.mjs && node --check scripts/wait-for-node.mjs && node --check scripts/smoke-bittrees.mjs",
+    "check": "node --check src/index.js && node --check src/client.js && node --check src/config.js && node --check src/gateway.js && node --check src/files.js && node --check src/artifacts.js && node --check scripts/check-node.mjs && node --check scripts/export-recovery-artifacts.mjs && node --check scripts/publish-path.mjs && node --check scripts/release-installer.mjs && node --check scripts/validate-release.mjs && node --check scripts/preflight-node.mjs && node --check scripts/setup-node.mjs && node --check scripts/wait-for-node.mjs && node --check scripts/smoke-bittrees.mjs",
     "node:check": "node scripts/check-node.mjs",
     "recovery:export": "node scripts/export-recovery-artifacts.mjs",
     "node:preflight": "node scripts/preflight-node.mjs",
@@ -50,6 +50,7 @@
     "test": "node --test",
     "smoke:bittrees": "node scripts/smoke-bittrees.mjs",
     "node:setup": "node scripts/setup-node.mjs",
-    "release:prepare": "node scripts/release-installer.mjs"
+    "release:prepare": "node scripts/release-installer.mjs",
+    "release:validate": "node scripts/validate-release.mjs"
   }
 }

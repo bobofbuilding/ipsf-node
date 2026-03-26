@@ -110,11 +110,12 @@ shasum -a 256 -c install-ipfs-node.sh.sha256
 bash install-ipfs-node.sh
 ```
 
-The repository now prepares these files with:
+The repository now prepares and validates these files with:
 
 ```bash
 cd /workspace/projects/ipfs-evm-system
 npm run release:prepare
+npm run release:validate
 ```
 
 Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.

@@ -6,6 +6,7 @@ import { runRecoveryExport, timestampUtc } from "../scripts/export-recovery-arti
 import { runPreflight } from "../scripts/preflight-node.mjs";
 import { runPublishPath } from "../scripts/publish-path.mjs";
 import { runReleasePackaging } from "../scripts/release-installer.mjs";
+import { runReleaseValidation } from "../scripts/validate-release.mjs";
 import { parseSetupArgs, runNodeSetup } from "../scripts/setup-node.mjs";
 
 test("runCheckNode reports healthy node details", async () => {
