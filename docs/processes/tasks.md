@@ -2,7 +2,7 @@
 Source: plans/ipfs-evm-system.md
 Updated: 2026-03-26
 
-## Status: Active
+## Status: Complete
 
 Current execution slice: harden `projects/ipfs-evm-system` into a repository-ready shared IPFS package with correct gateway helpers, package typing, baseline tests, and clean git boundaries.
 Design-impact review result: the current board now needs to track repository/build readiness, not just scope cleanup.
@@ -49,18 +49,23 @@ Design-impact review result: the current board now needs to track repository/bui
   - Result: `.gitignore` now excludes `.local-ipfs`, `recovery/`, `.DS_Store`, and npm debug logs.
 
 ### Phase 5: Repository Publication
-- [ ] Initialize the project as its own git repository.
-- [ ] Set the remote to `https://github.com/bobofbuilding/ipsf-node.git`.
-- [ ] Commit the repository-ready IPFS package state.
-- [ ] Push `main` to GitHub.
+- [x] Initialize the project as its own git repository.
+- [x] Set the remote to `https://github.com/bobofbuilding/ipsf-node.git`.
+- [x] Commit the repository-ready IPFS package state.
+- [x] Push `main` to GitHub.
 
 ## Verification
 - [x] `cd /workspace/projects/ipfs-evm-system && npm run check`
-- [ ] `cd /workspace/projects/ipfs-evm-system && npm run test`
-- [ ] `cd /workspace/projects/ipfs-evm-system && npm run build`
+- [x] `cd /workspace/projects/ipfs-evm-system && npm run test`
+- [x] `cd /workspace/projects/ipfs-evm-system && npm run build`
 
 ## Blockers
 - None currently.
+
+## Publication Result
+- GitHub repo: `git@github.com:bobofbuilding/ipsf-node.git`
+- Branch: `main`
+- Initial publish commit: `4da4bae` (`Bootstrap IPFS storage repo`)
 
 ## Open Questions
 - Should the package stay ESM-only, or should a later release add dual ESM/CJS packaging?
@@ -80,4 +85,4 @@ Design-impact review result: the current board now needs to track repository/bui
 - `task-manager` owns repository-publication follow-through and cross-board cleanup.
 
 ## Handoffs
-- Next handoff: complete repo initialization, run test/build verification, and push `main` so the IPFS package has a canonical standalone home.
+- Next handoff: consumer projects can now reference the standalone repo as the canonical shared-IPFS package source.
