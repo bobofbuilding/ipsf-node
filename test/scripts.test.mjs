@@ -5,6 +5,7 @@ import { runCheckNode } from "../scripts/check-node.mjs";
 import { runRecoveryExport, timestampUtc } from "../scripts/export-recovery-artifacts.mjs";
 import { runPreflight } from "../scripts/preflight-node.mjs";
 import { runPublishPath } from "../scripts/publish-path.mjs";
+import { runReleasePackaging } from "../scripts/release-installer.mjs";
 import { parseSetupArgs, runNodeSetup } from "../scripts/setup-node.mjs";
 
 test("runCheckNode reports healthy node details", async () => {
@@ -173,6 +174,26 @@ test("runNodeSetup skips init when the repo already exists", () => {
   assert.equal(exitCode, 0);
   assert.equal(out[0], "ipfs-repo:existing");
   assert.equal(calls[0][0], "config");
+});
+
+test("runReleasePackaging writes installer and checksum artifacts", async () => {
+  const writes = new Map();
+  const out = [];
+  const exitCode = await runReleasePackaging({
+    outputDir: "/tmp/ipfs-release",
+    readFileImpl: async () => Buffer.from("#!/usr/bin/env bash\necho ok\n"),
+    mkdirImpl: async () => {},
+    writeFileImpl: async (filePath, contents) => {
+      writes.set(filePath, contents);
+    },
+    stdout: (line) => out.push(line),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.equal(writes.get("/tmp/ipfs-release/install-ipfs-node.sh").toString(), "#!/usr/bin/env bash\necho ok\n");
+  const checksumText = writes.get("/tmp/ipfs-release/install-ipfs-node.sh.sha256").toString();
+  assert.match(checksumText, /^[a-f0-9]{64}  install-ipfs-node\.sh\n$/);
+  assert.equal(out[0], "release-installer:prepared");
 });
 
 test("runPublishPath rejects missing argv path", async () => {

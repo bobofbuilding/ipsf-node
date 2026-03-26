@@ -97,3 +97,23 @@ cp ~/.local/share/bittrees-ipfs/com.bittrees.ipfs-node.plist ~/Library/LaunchAge
 launchctl unload ~/Library/LaunchAgents/com.bittrees.ipfs-node.plist 2>/dev/null || true
 launchctl load ~/Library/LaunchAgents/com.bittrees.ipfs-node.plist
 ```
+
+## Stable Releases
+
+For operators who want a stable installer instead of tracking `main`, use the latest GitHub release assets:
+
+```bash
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh -o install-ipfs-node.sh
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256 -o install-ipfs-node.sh.sha256
+shasum -a 256 -c install-ipfs-node.sh.sha256
+bash install-ipfs-node.sh
+```
+
+The repository now prepares these files with:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run release:prepare
+```
+
+Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.

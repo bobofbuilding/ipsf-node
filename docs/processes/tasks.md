@@ -116,6 +116,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add generated service files for Linux and macOS installs.
   - Result: the installer now writes a `systemd` unit and a `launchd` plist so operators can register the IPFS node for auto-start.
 
+### Phase 17: Release Packaging
+- [x] Add release-packaging artifacts for the downloadable installer.
+  - Result: `npm run release:prepare` now generates `dist/release/install-ipfs-node.sh` and a matching SHA-256 file.
+- [x] Add tagged GitHub release publication for installer assets.
+  - Result: pushes matching `v*` now publish the installer and checksum through `.github/workflows/release.yml`.
+
 ## Blockers
 - None currently.
 
