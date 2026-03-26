@@ -95,6 +95,7 @@ Stable release download target:
 ```bash
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh -o install-ipfs-node.sh
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256 -o install-ipfs-node.sh.sha256
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json -o release-manifest.json
 shasum -a 256 -c install-ipfs-node.sh.sha256
 bash install-ipfs-node.sh
 ```

@@ -176,12 +176,25 @@ test("runNodeSetup skips init when the repo already exists", () => {
   assert.equal(calls[0][0], "config");
 });
 
-test("runReleasePackaging writes installer and checksum artifacts", async () => {
+test("runReleasePackaging writes installer, checksum, and manifest artifacts", async () => {
   const writes = new Map();
   const out = [];
   const exitCode = await runReleasePackaging({
     outputDir: "/tmp/ipfs-release",
-    readFileImpl: async () => Buffer.from("#!/usr/bin/env bash\necho ok\n"),
+    releaseVersion: "v0.1.0",
+    commitSha: "abc123",
+    readFileImpl: async (filePath, encoding) => {
+      if (String(filePath).endsWith("package.json")) {
+        return JSON.stringify({ name: "@workspace/ipfs-storage", version: "0.1.0" });
+      }
+      const installer = [
+        'KUBO_VERSION="${KUBO_VERSION:-0.33.2}"',
+        '#!/usr/bin/env bash',
+        'echo ok',
+        '',
+      ].join('\n');
+      return encoding ? installer : Buffer.from(installer);
+    },
     mkdirImpl: async () => {},
     writeFileImpl: async (filePath, contents) => {
       writes.set(filePath, contents);
@@ -190,9 +203,16 @@ test("runReleasePackaging writes installer and checksum artifacts", async () => 
   });
 
   assert.equal(exitCode, 0);
-  assert.equal(writes.get("/tmp/ipfs-release/install-ipfs-node.sh").toString(), "#!/usr/bin/env bash\necho ok\n");
+  assert.match(writes.get("/tmp/ipfs-release/install-ipfs-node.sh").toString(), /echo ok/);
   const checksumText = writes.get("/tmp/ipfs-release/install-ipfs-node.sh.sha256").toString();
   assert.match(checksumText, /^[a-f0-9]{64}  install-ipfs-node\.sh\n$/);
+  const manifest = JSON.parse(writes.get("/tmp/ipfs-release/release-manifest.json").toString());
+  assert.equal(manifest.packageName, "@workspace/ipfs-storage");
+  assert.equal(manifest.packageVersion, "0.1.0");
+  assert.equal(manifest.releaseVersion, "v0.1.0");
+  assert.equal(manifest.commitSha, "abc123");
+  assert.equal(manifest.kuboVersion, "0.33.2");
+  assert.equal(manifest.checksumFile, "install-ipfs-node.sh.sha256");
   assert.equal(out[0], "release-installer:prepared");
 });
 

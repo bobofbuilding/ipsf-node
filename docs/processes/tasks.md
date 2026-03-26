@@ -122,6 +122,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add tagged GitHub release publication for installer assets.
   - Result: pushes matching `v*` now publish the installer and checksum through `.github/workflows/release.yml`.
 
+### Phase 18: Release Manifest
+- [x] Add a machine-readable release manifest to packaged installer artifacts.
+  - Result: `npm run release:prepare` now also generates `dist/release/release-manifest.json` with package version, release tag, commit SHA, installer SHA, and Kubo version.
+
 ## Blockers
 - None currently.
 

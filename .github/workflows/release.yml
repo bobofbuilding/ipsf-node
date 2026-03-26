@@ -38,4 +38,5 @@ jobs:
           files: |
             dist/release/install-ipfs-node.sh
             dist/release/install-ipfs-node.sh.sha256
+            dist/release/release-manifest.json
           generate_release_notes: true

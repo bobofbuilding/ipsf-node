@@ -105,6 +105,7 @@ For operators who want a stable installer instead of tracking `main`, use the la
 ```bash
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh -o install-ipfs-node.sh
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256 -o install-ipfs-node.sh.sha256
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json -o release-manifest.json
 shasum -a 256 -c install-ipfs-node.sh.sha256
 bash install-ipfs-node.sh
 ```
@@ -117,3 +118,5 @@ npm run release:prepare
 ```
 
 Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.
+
+The release manifest includes the package version, release tag, commit SHA, installer SHA-256, and pinned Kubo version.
