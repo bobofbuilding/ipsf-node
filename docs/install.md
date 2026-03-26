@@ -116,12 +116,13 @@ The repository now prepares, validates, and can download-verify these files with
 cd /workspace/projects/ipfs-evm-system
 npm run release:prepare
 npm run release:validate
+npm run release:validate -- --json --report-file dist/release/release-validation-report.json
 npm run release:verify-download -- --tag v0.1.0
 npm run release:verify-download -- --json
 npm run release:verify-download -- --json --report-file dist/release/verify-report.json
 ```
 
-Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.
+Tagged pushes matching `v*` publish the installer, manifest, and `release-validation-report.json` through `.github/workflows/release.yml`.
 
 The release manifest includes the package version, release tag, commit SHA, installer SHA-256, and pinned Kubo version.
 

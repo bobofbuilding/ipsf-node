@@ -64,6 +64,7 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `bash -n ./scripts/start-node.sh`
 - `npm run release:prepare`
 - `npm run release:validate`
+- `npm run release:validate -- --json --report-file <path>`
 - `npm run release:verify-download -- --tag <version>`
 - `npm run release:verify-download -- --json`
 
@@ -119,7 +120,7 @@ mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json dist/r
 npm run release:validate
 ```
 
-Tagged releases also generate GitHub Artifact Attestations for the installer bundle through `.github/workflows/release.yml`.
+Tagged releases also generate GitHub Artifact Attestations for the installer bundle through `.github/workflows/release.yml`, and they now publish `release-validation-report.json` alongside the installer assets.
 
 Full operator runbook: `docs/release-verification.md`
 

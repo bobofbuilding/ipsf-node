@@ -41,12 +41,14 @@ Validate the installer, checksum file, and manifest together through the repo va
 mkdir -p dist/release
 mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json dist/release/
 npm run release:validate
+npm run release:validate -- --json --report-file dist/release/release-validation-report.json
 ```
 
 Expected result:
 
 - `release-installer:validated`
 - printed installer, checksum, manifest, and SHA-256 paths
+- optional JSON report in `dist/release/release-validation-report.json` when `--json --report-file` is used
 
 This confirms:
 
