@@ -59,6 +59,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] `cd /workspace/projects/ipfs-evm-system && npm run test`
 - [x] `cd /workspace/projects/ipfs-evm-system && npm run build`
 
+### Phase 6: Repository Hardening
+- [x] Add GitHub Actions CI for push and pull request verification.
+  - Result: `.github/workflows/ci.yml` now runs `npm install` and `npm run build` on `main` pushes and pull requests.
+- [x] Add standalone package metadata for repository consumers.
+  - Result: `package.json` now includes repository, homepage, bugs, keywords, license, and Node engine metadata.
+
 ## Blockers
 - None currently.
 

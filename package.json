@@ -4,6 +4,25 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Shared IPFS storage library for workspace projects",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/bobofbuilding/ipsf-node.git"
+  },
+  "homepage": "https://github.com/bobofbuilding/ipsf-node",
+  "bugs": {
+    "url": "https://github.com/bobofbuilding/ipsf-node/issues"
+  },
+  "keywords": [
+    "ipfs",
+    "kubo",
+    "storage",
+    "gateway",
+    "workspace"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "files": [
