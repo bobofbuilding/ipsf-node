@@ -12,6 +12,7 @@ const releaseFiles = [
   "install-ipfs-node.sh",
   "install-ipfs-node.sh.sha256",
   "release-manifest.json",
+  "release-validation-report.json",
 ];
 
 function parseArgs(argv) {
@@ -78,6 +79,33 @@ function parseKeyValueLine(line) {
   };
 }
 
+function summarizeValidationReport(payload) {
+  return {
+    ok: payload?.ok === true,
+    installerFile: payload?.installer ? path.basename(payload.installer) : null,
+    checksumFile: payload?.checksum ? path.basename(payload.checksum) : null,
+    manifestFile: payload?.manifest ? path.basename(payload.manifest) : null,
+    sha256: payload?.sha256 ?? null,
+  };
+}
+
+function compareValidationReports(localPayload, publishedPayload) {
+  const localSummary = summarizeValidationReport(localPayload);
+  const publishedSummary = summarizeValidationReport(publishedPayload);
+  const matches = (
+    localSummary.ok === publishedSummary.ok &&
+    localSummary.installerFile === publishedSummary.installerFile &&
+    localSummary.checksumFile === publishedSummary.checksumFile &&
+    localSummary.manifestFile === publishedSummary.manifestFile &&
+    localSummary.sha256 === publishedSummary.sha256
+  );
+  return {
+    matches,
+    local: localSummary,
+    published: publishedSummary,
+  };
+}
+
 async function emitJsonResult(payload, { options, stdout, writeFileImpl }) {
   const jsonText = JSON.stringify(payload, null, 2);
   if (options.reportFile) {
@@ -90,6 +118,7 @@ export async function runReleaseDownloadVerification({
   argv = process.argv.slice(2),
   fetchImpl = globalThis.fetch,
   mkdirImpl = fs.mkdir,
+  readFileImpl = fs.readFile,
   writeFileImpl = fs.writeFile,
   validateReleaseImpl = runReleaseValidation,
   stdout = console.log,
@@ -138,21 +167,17 @@ export async function runReleaseDownloadVerification({
       installerPath: path.join(options.outputDir, "install-ipfs-node.sh"),
       checksumPath: path.join(options.outputDir, "install-ipfs-node.sh.sha256"),
       manifestPath: path.join(options.outputDir, "release-manifest.json"),
+      json: true,
       stdout: (line) => {
         validationOut.push(String(line));
-        if (!options.json) {
-          stdout(line);
-        }
       },
       stderr: (line) => {
         validationErr.push(String(line));
-        if (!options.json) {
-          stderr(line);
-        }
       },
     });
 
-    if (exitCode !== 0) {
+    const localValidationPayload = validationOut[0] ? JSON.parse(validationOut[0]) : null;
+    if (exitCode !== 0 || !localValidationPayload?.ok) {
       if (options.json) {
         await emitJsonResult({
           ok: false,
@@ -160,40 +185,46 @@ export async function runReleaseDownloadVerification({
           outputDir: options.outputDir,
           reportFile: options.reportFile,
           downloadedFiles,
-          validation: {
+          validation: localValidationPayload ?? {
             ok: false,
-            stdout: validationOut,
             stderr: validationErr,
           },
         }, { options, stdout, writeFileImpl });
+      } else {
+        stderr("release-download:invalid");
+        if (localValidationPayload?.error) {
+          stderr(localValidationPayload.error);
+        } else {
+          stderr(validationErr[0] || "Release validation failed");
+        }
       }
-      return exitCode;
+      return exitCode || 1;
+    }
+
+    const publishedValidationPath = path.join(options.outputDir, "release-validation-report.json");
+    const publishedValidationPayload = JSON.parse(await readFileImpl(publishedValidationPath, "utf8"));
+    const publishedValidationReport = compareValidationReports(localValidationPayload, publishedValidationPayload);
+    if (!publishedValidationReport.matches) {
+      throw new Error("Published validation report does not match downloaded bundle");
     }
 
     if (options.json) {
-      const validationFields = Object.fromEntries(
-        validationOut
-          .map(parseKeyValueLine)
-          .filter(Boolean)
-          .map((entry) => [entry.key, entry.value]),
-      );
       await emitJsonResult({
         ok: true,
         releaseVersion: options.releaseVersion,
         outputDir: options.outputDir,
         reportFile: options.reportFile,
         downloadedFiles,
-        validation: {
-          ok: true,
-          stdout: validationOut,
-          installer: validationFields.installer ?? null,
-          checksum: validationFields.checksum ?? null,
-          manifest: validationFields.manifest ?? null,
-          sha256: validationFields.sha256 ?? null,
-        },
+        validation: localValidationPayload,
+        publishedValidationReport,
       }, { options, stdout, writeFileImpl });
     } else {
-      stdout("release-download:verified");
+      stdout("release-installer:validated");
+      stdout("installer=" + localValidationPayload.installer);
+      stdout("checksum=" + localValidationPayload.checksum);
+      stdout("manifest=" + localValidationPayload.manifest);
+      stdout("sha256=" + localValidationPayload.sha256);
+      stdout("release-validation-report:matched");
       stdout("releaseVersion=" + options.releaseVersion);
       stdout("outputDir=" + options.outputDir);
     }

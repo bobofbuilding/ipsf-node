@@ -100,6 +100,7 @@ Stable release download target:
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh -o install-ipfs-node.sh
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256 -o install-ipfs-node.sh.sha256
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json -o release-manifest.json
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-validation-report.json -o release-validation-report.json
 shasum -a 256 -c install-ipfs-node.sh.sha256
 bash install-ipfs-node.sh
 ```
@@ -116,7 +117,7 @@ Manual bundle validation after download:
 
 ```bash
 mkdir -p dist/release
-mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json dist/release/
+mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json release-validation-report.json dist/release/
 npm run release:validate
 ```
 
