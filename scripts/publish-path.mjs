@@ -1,27 +1,35 @@
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { detectPublishTarget, IpfsStorageClient } from "../src/client.js";
 import { getIpfsStorageConfig } from "../src/config.js";
 
-async function main() {
-  const inputPath = process.argv[2];
-  const sourceProject = process.argv[3];
+export async function runPublishPath({
+  argv = process.argv.slice(2),
+  client = null,
+  detectTarget = detectPublishTarget,
+  stdout = console.log,
+  stderr = console.error,
+} = {}) {
+  const inputPath = argv[0];
+  const sourceProject = argv[1];
 
   if (!inputPath) {
-    console.error("usage: npm run publish:path -- <path> [source-project]");
-    process.exitCode = 1;
-    return;
+    stderr("usage: npm run publish:path -- <path> [source-project]");
+    return 1;
   }
 
-  const client = new IpfsStorageClient({
-    ...getIpfsStorageConfig(),
-    defaultSourceProject: sourceProject ?? getIpfsStorageConfig().defaultSourceProject,
-  });
+  const resolvedClient =
+    client ??
+    new IpfsStorageClient({
+      ...getIpfsStorageConfig(),
+      defaultSourceProject: sourceProject ?? getIpfsStorageConfig().defaultSourceProject,
+    });
 
-  const target = await detectPublishTarget(inputPath);
+  const target = await detectTarget(inputPath);
 
   if (target.isDirectory) {
-    const result = await client.publishDirectory({
+    const result = await resolvedClient.publishDirectory({
       directoryPath: inputPath,
       sourceProject,
       metadata: {
@@ -30,12 +38,12 @@ async function main() {
       },
     });
 
-    console.log(JSON.stringify(result, null, 2));
-    return;
+    stdout(JSON.stringify(result, null, 2));
+    return 0;
   }
 
   if (target.isFile) {
-    const result = await client.publishFile({
+    const result = await resolvedClient.publishFile({
       filePath: inputPath,
       sourceProject,
       metadata: {
@@ -44,12 +52,17 @@ async function main() {
       },
     });
 
-    console.log(JSON.stringify(result, null, 2));
-    return;
+    stdout(JSON.stringify(result, null, 2));
+    return 0;
   }
 
-  console.error(`unsupported-path-type:${inputPath}`);
-  process.exitCode = 1;
+  stderr(`unsupported-path-type:${inputPath}`);
+  return 1;
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const exitCode = await runPublishPath();
+  if (exitCode !== 0) {
+    process.exitCode = exitCode;
+  }
+}

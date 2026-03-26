@@ -60,7 +60,7 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `npm run test`
 - `npm run build`
 
-`npm run build` is the baseline repository verification path and currently runs syntax checks plus the gateway helper tests.
+`npm run build` is the baseline repository verification path and currently runs syntax checks plus the gateway helper tests and CLI-script tests.
 
 GitHub Actions runs the same verification on every push to `main` and every pull request via `.github/workflows/ci.yml`.
 

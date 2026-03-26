@@ -65,6 +65,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add standalone package metadata for repository consumers.
   - Result: `package.json` now includes repository, homepage, bugs, keywords, license, and Node engine metadata.
 
+### Phase 7: CLI Test Coverage
+- [x] Refactor operator-facing scripts for importable execution and dependency injection.
+  - Result: `check-node.mjs`, `preflight-node.mjs`, `publish-path.mjs`, and `export-recovery-artifacts.mjs` now expose testable runner functions while preserving CLI behavior.
+- [x] Add CLI-level tests for shipped operator entrypoints.
+  - Result: `test/scripts.test.mjs` now covers healthy and failing node checks, preflight behavior, publish-path usage and file publishing, and recovery-export artifact generation.
+
 ## Blockers
 - None currently.
 

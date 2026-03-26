@@ -1,22 +1,32 @@
+import { pathToFileURL } from "node:url";
+
 import { IpfsStorageClient } from "../src/client.js";
 import { getIpfsStorageConfig } from "../src/config.js";
 
-async function main() {
-  const client = new IpfsStorageClient(getIpfsStorageConfig());
+export async function runCheckNode({
+  client = new IpfsStorageClient(getIpfsStorageConfig()),
+  stdout = console.log,
+  stderr = console.error,
+} = {}) {
   const health = await client.checkNodeHealth();
 
   if (!health.available) {
-    console.error("ipfs-node:unavailable");
+    stderr("ipfs-node:unavailable");
     if (health.error) {
-      console.error(health.error);
+      stderr(health.error);
     }
-    process.exitCode = 1;
-    return;
+    return 1;
   }
 
-  console.log("ipfs-node:available");
-  console.log(`version=${health.version ?? "unknown"}`);
-  console.log(`id=${health.id ?? "unknown"}`);
+  stdout("ipfs-node:available");
+  stdout(`version=${health.version ?? "unknown"}`);
+  stdout(`id=${health.id ?? "unknown"}`);
+  return 0;
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const exitCode = await runCheckNode();
+  if (exitCode !== 0) {
+    process.exitCode = exitCode;
+  }
+}

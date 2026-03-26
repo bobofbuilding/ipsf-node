@@ -1,34 +1,44 @@
-import { spawnSync } from "node:child_process";
+import { spawnSync as nodeSpawnSync } from "node:child_process";
 import fs from "node:fs";
+import { pathToFileURL } from "node:url";
 
 import { getIpfsStorageConfig } from "../src/config.js";
 
-function main() {
-  const config = getIpfsStorageConfig();
-  const hasConfiguredBinary = fs.existsSync(config.cliPath);
+export function runPreflight({
+  config = getIpfsStorageConfig(),
+  existsSync = fs.existsSync,
+  spawnSync = nodeSpawnSync,
+  stdout = console.log,
+  stderr = console.error,
+} = {}) {
+  const hasConfiguredBinary = existsSync(config.cliPath);
 
-  console.log(`apiBaseUrl=${config.apiBaseUrl}`);
-  console.log(`gatewayBaseUrl=${config.gatewayBaseUrl}`);
-  console.log(`defaultSourceProject=${config.defaultSourceProject ?? "unset"}`);
-  console.log(`cliPath=${config.cliPath}`);
-  console.log(`repoPath=${config.repoPath}`);
+  stdout(`apiBaseUrl=${config.apiBaseUrl}`);
+  stdout(`gatewayBaseUrl=${config.gatewayBaseUrl}`);
+  stdout(`defaultSourceProject=${config.defaultSourceProject ?? "unset"}`);
+  stdout(`cliPath=${config.cliPath}`);
+  stdout(`repoPath=${config.repoPath}`);
 
   if (!hasConfiguredBinary) {
-    console.error("ipfs-cli:missing");
-    console.error(`Configured IPFS CLI path does not exist: ${config.cliPath}`);
-    process.exitCode = 1;
-    return;
+    stderr("ipfs-cli:missing");
+    stderr(`Configured IPFS CLI path does not exist: ${config.cliPath}`);
+    return 1;
   }
 
   const version = spawnSync(config.cliPath, ["--version"], { encoding: "utf8" });
   if (version.status !== 0) {
-    console.error("ipfs-cli:unusable");
-    console.error(version.stderr.trim());
-    process.exitCode = 1;
-    return;
+    stderr("ipfs-cli:unusable");
+    stderr(version.stderr.trim());
+    return 1;
   }
 
-  console.log(version.stdout.trim());
+  stdout(version.stdout.trim());
+  return 0;
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const exitCode = runPreflight();
+  if (exitCode !== 0) {
+    process.exitCode = exitCode;
+  }
+}
