@@ -71,6 +71,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add CLI-level tests for shipped operator entrypoints.
   - Result: `test/scripts.test.mjs` now covers healthy and failing node checks, preflight behavior, publish-path usage and file publishing, and recovery-export artifact generation.
 
+### Phase 8: Client Transport Coverage
+- [x] Add mocked transport tests for the shared IPFS client RPC contract.
+  - Result: `test/client.test.mjs` now covers `publishFile`, `publishDirectory`, `publishJson`, `pinCid`, `unpinCid`, `checkCidHealth`, `resolveCid`, `checkNodeHealth`, and `ensurePinned` with mocked fetch responses.
+
 ## Blockers
 - None currently.
 
