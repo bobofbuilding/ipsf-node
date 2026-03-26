@@ -56,3 +56,12 @@ cd /workspace/projects/ipfs-evm-system
 npm run node:setup
 ./scripts/start-node.sh
 ```
+
+
+## Auto-Start Options
+
+After running the installer, operators can either:
+
+- run `~/.local/share/bittrees-ipfs/start-ipfs-node.sh` manually
+- install `~/.local/share/bittrees-ipfs/ipfs-node.service` as a `systemd` user unit on Linux
+- install `~/.local/share/bittrees-ipfs/com.bittrees.ipfs-node.plist` as a `launchd` agent on macOS

@@ -112,6 +112,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add a repo-local node setup command.
   - Result: `npm run node:setup` configures a local repo, API port, gateway port, and default CORS headers when Kubo is already installed.
 
+### Phase 16: Auto-Start Service Files
+- [x] Add generated service files for Linux and macOS installs.
+  - Result: the installer now writes a `systemd` unit and a `launchd` plist so operators can register the IPFS node for auto-start.
+
 ## Blockers
 - None currently.
 

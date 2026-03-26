@@ -178,6 +178,54 @@ export IPFS_PATH="$IPFS_REPO_PATH"
 exec "$INSTALL_BIN_DIR/ipfs" daemon
 STARTFILE
   chmod +x "$INSTALL_ROOT/start-ipfs-node.sh"
+
+  cat > "$INSTALL_ROOT/ipfs-node.service" <<SERVICEFILE
+[Unit]
+Description=Bittrees IPFS Node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=IPFS_PATH=$IPFS_REPO_PATH
+ExecStart=$INSTALL_BIN_DIR/ipfs daemon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+SERVICEFILE
+
+  cat > "$INSTALL_ROOT/com.bittrees.ipfs-node.plist" <<PLISTFILE
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.bittrees.ipfs-node</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>$INSTALL_BIN_DIR/ipfs</string>
+      <string>daemon</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>IPFS_PATH</key>
+      <string>$IPFS_REPO_PATH</string>
+    </dict>
+    <key>KeepAlive</key>
+    <true/>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$INSTALL_ROOT/ipfs-node.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>$INSTALL_ROOT/ipfs-node.stderr.log</string>
+    <key>WorkingDirectory</key>
+    <string>$INSTALL_ROOT</string>
+  </dict>
+</plist>
+PLISTFILE
 }
 
 main() {
@@ -213,11 +261,13 @@ main() {
   log "repoPath=$IPFS_REPO_PATH"
   log "envFile=$INSTALL_ROOT/ipfs-node.env"
   log "startScript=$INSTALL_ROOT/start-ipfs-node.sh"
+  log "systemdUnit=$INSTALL_ROOT/ipfs-node.service"
+  log "launchdPlist=$INSTALL_ROOT/com.bittrees.ipfs-node.plist"
   log ""
   log "Next steps:"
   log "  1. Add $INSTALL_BIN_DIR to PATH if it is not already present."
   log "  2. source $INSTALL_ROOT/ipfs-node.env"
-  log "  3. $INSTALL_ROOT/start-ipfs-node.sh"
+  log "  3. Start manually with $INSTALL_ROOT/start-ipfs-node.sh, or install the generated service file for your OS."
 }
 
 main "$@"

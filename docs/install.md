@@ -14,6 +14,8 @@ Default install targets:
 - binary: `$HOME/.local/bin/ipfs`
 - helper env file: `$HOME/.local/share/bittrees-ipfs/ipfs-node.env`
 - helper start script: `$HOME/.local/share/bittrees-ipfs/start-ipfs-node.sh`
+- Linux service unit: `$HOME/.local/share/bittrees-ipfs/ipfs-node.service`
+- macOS launchd plist: `$HOME/.local/share/bittrees-ipfs/com.bittrees.ipfs-node.plist`
 - repo path: `$HOME/.bittrees/ipfs-node`
 
 The installer currently supports:
@@ -72,4 +74,26 @@ Then in another shell:
 cd /workspace/projects/ipfs-evm-system
 npm run node:wait
 npm run node:check
+```
+
+## Auto-Start
+
+The installer writes service definitions for both supported OS families.
+
+Linux `systemd` user service:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp ~/.local/share/bittrees-ipfs/ipfs-node.service ~/.config/systemd/user/ipfs-node.service
+systemctl --user daemon-reload
+systemctl --user enable --now ipfs-node.service
+```
+
+macOS `launchd` agent:
+
+```bash
+mkdir -p ~/Library/LaunchAgents
+cp ~/.local/share/bittrees-ipfs/com.bittrees.ipfs-node.plist ~/Library/LaunchAgents/com.bittrees.ipfs-node.plist
+launchctl unload ~/Library/LaunchAgents/com.bittrees.ipfs-node.plist 2>/dev/null || true
+launchctl load ~/Library/LaunchAgents/com.bittrees.ipfs-node.plist
 ```

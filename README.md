@@ -97,6 +97,11 @@ npm run node:setup
 ./scripts/start-node.sh
 ```
 
+The installer also writes OS service templates:
+
+- Linux: `ipfs-node.service`
+- macOS: `com.bittrees.ipfs-node.plist`
+
 ## Runtime Scripts
 
 - `npm run node:setup`
