@@ -1,6 +1,6 @@
 # Integrations
 
-See also: `docs/smoke-validation.md` for the cross-project publish commands.
+See also: `docs/smoke-validation.md` and `npm run smoke:bittrees` for the cross-project publish flow.
 
 
 ## Crypto Directory

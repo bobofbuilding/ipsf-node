@@ -2,6 +2,17 @@
 
 Use this guide when you want to confirm the shared IPFS node and customer adapters work across the active Bittrees projects.
 
+## One Command
+
+Run the full Bittrees customer smoke pass from the shared repo:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run smoke:bittrees
+```
+
+The script runs the four customer publish commands in sequence and prints one summary with CID, pin, and gateway results.
+
 ## Preconditions
 
 - the shared Kubo node is reachable through the configured API and gateway URLs

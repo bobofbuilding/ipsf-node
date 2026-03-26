@@ -40,12 +40,13 @@
   },
   "scripts": {
     "build": "npm run check && npm run test",
-    "check": "node --check src/index.js && node --check src/client.js && node --check src/config.js && node --check src/gateway.js && node --check src/files.js && node --check src/artifacts.js && node --check scripts/check-node.mjs && node --check scripts/export-recovery-artifacts.mjs && node --check scripts/publish-path.mjs && node --check scripts/preflight-node.mjs && node --check scripts/wait-for-node.mjs",
+    "check": "node --check src/index.js && node --check src/client.js && node --check src/config.js && node --check src/gateway.js && node --check src/files.js && node --check src/artifacts.js && node --check scripts/check-node.mjs && node --check scripts/export-recovery-artifacts.mjs && node --check scripts/publish-path.mjs && node --check scripts/preflight-node.mjs && node --check scripts/wait-for-node.mjs && node --check scripts/smoke-bittrees.mjs",
     "node:check": "node scripts/check-node.mjs",
     "recovery:export": "node scripts/export-recovery-artifacts.mjs",
     "node:preflight": "node scripts/preflight-node.mjs",
     "node:wait": "node scripts/wait-for-node.mjs",
     "publish:path": "node scripts/publish-path.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "smoke:bittrees": "node scripts/smoke-bittrees.mjs"
   }
 }

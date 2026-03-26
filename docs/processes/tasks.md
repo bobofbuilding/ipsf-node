@@ -88,6 +88,12 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add a concrete NFTFactory sample metadata artifact for the smoke path.
   - Result: `projects/nftfactory/examples/smoke-metadata.json` can be published through `npm run ipfs:publish:metadata`.
 
+### Phase 11: Smoke Orchestration Script
+- [x] Turn the cross-project smoke guide into one executable shared-repo command.
+  - Result: `npm run smoke:bittrees` now runs the four customer commands in sequence and prints a summarized CID/pin/gateway report.
+- [x] Add parser tests for smoke output normalization.
+  - Result: `test/smoke-bittrees.test.mjs` now covers JSON-style and line-oriented customer output parsing.
+
 ## Blockers
 - None currently.
 
