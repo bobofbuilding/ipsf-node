@@ -9,6 +9,7 @@ Fast path from the repo checkout:
 ```bash
 cd /workspace/projects/ipfs-evm-system
 npm run release:verify-download -- --tag v0.1.0
+npm run release:verify-download -- --json
 ```
 
 Manual download path:

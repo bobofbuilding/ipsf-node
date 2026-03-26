@@ -65,6 +65,7 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `npm run release:prepare`
 - `npm run release:validate`
 - `npm run release:verify-download -- --tag <version>`
+- `npm run release:verify-download -- --json`
 
 `npm run build` is the baseline repository verification path and currently runs syntax checks plus gateway-helper, CLI-script, and client-transport tests.
 
@@ -106,6 +107,7 @@ One-command bundle download and validation:
 
 ```bash
 npm run release:verify-download -- --tag v0.1.0
+npm run release:verify-download -- --json
 ```
 
 Manual bundle validation after download:

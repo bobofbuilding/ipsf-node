@@ -117,6 +117,7 @@ cd /workspace/projects/ipfs-evm-system
 npm run release:prepare
 npm run release:validate
 npm run release:verify-download -- --tag v0.1.0
+npm run release:verify-download -- --json
 ```
 
 Tagged pushes matching `v*` publish the installer and checksum through `.github/workflows/release.yml`.

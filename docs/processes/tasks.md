@@ -1,172 +1,73 @@
-# Tasks: IPFS Storage System
-Source: plans/ipfs-evm-system.md
-Updated: 2026-03-26
+# Release Verification
 
-## Status: Complete
+Use this runbook when you download a tagged installer release from GitHub and want to verify integrity, bundle consistency, and provenance before running it.
 
-Current execution slice: harden `projects/ipfs-evm-system` into a repository-ready shared IPFS package with correct gateway helpers, package typing, baseline tests, and clean git boundaries.
-Design-impact review result: the current board now needs to track repository/build readiness, not just scope cleanup.
+## Download
 
-### Phase 0: Scope Cleanup
-- [x] Review the current IPFS plan, design, and task board.
-- [x] Review how `crypto-directory`, `skillmesh`, and `bitlogic` relate to IPFS.
-- [x] Shrink the IPFS project scope to shared storage infrastructure.
-- [x] Set the default integration surface to a shared library.
-- [x] Bring Bitlogic into scope as a planned integration consumer.
+Fast path from the repo checkout:
 
-### Phase 1: Shared Node Setup
-- [x] Define how the Kubo node should run.
-- [x] Define pinning behavior.
-- [x] Define backup pinning.
-- [x] Define node health checks.
-- [x] Define basic recovery steps.
-  - Current node scripts: `scripts/start-node.sh`, `scripts/preflight-node.mjs`, `scripts/wait-for-node.mjs`, `scripts/check-node.mjs`
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run release:verify-download -- --tag v0.1.0
+npm run release:verify-download -- --json
+```
 
-### Phase 2: Shared Library
-- [x] Define the library API.
-- [x] Define library config and connection handling.
-- [x] Define minimal metadata handling.
-- [x] Define error and retry behavior.
-- [x] Fix the public gateway helper contract so exported URLs resolve to `/ipfs/<cid>` paths.
-  - Result: `src/gateway.js` now normalizes `ipfs://`, `/ipfs/`, and `ipfs/` inputs and always builds `/ipfs/<cid>` gateway URLs.
+Manual download path:
 
-### Phase 3: Customer Integrations
-- [x] Define how `crypto-directory` hands built site artifacts to the shared library.
-- [x] Define how `skillmesh` publishes skill definitions and artifacts through the shared library.
-- [x] Define how `bitlogic` publishes artifacts through the shared library.
-- [x] Define how `nftfactory` publishes metadata and prepared assets through the shared library.
-- [x] Keep durable CID records, release notes, and product policy local to the consuming projects.
+```bash
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh -o install-ipfs-node.sh
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256 -o install-ipfs-node.sh.sha256
+curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json -o release-manifest.json
+```
 
-### Phase 4: Build and Package Readiness
-- [x] Add explicit package entry metadata for standalone consumption.
-  - Result: `package.json` now exposes `main`, `types`, `files`, and structured `exports`.
-- [x] Add TypeScript declarations for the public package surface.
-  - Result: `src/index.d.ts` covers the exported client, config, gateway, and artifact helpers.
-- [x] Add baseline automated tests for the public gateway helpers.
-  - Result: `test/gateway.test.mjs` verifies CID normalization and `/ipfs/<cid>` gateway URL construction.
-- [x] Add a simple build entrypoint that verifies parseability and tests.
-  - Result: `npm run build` now runs `npm run check && npm run test`.
-- [x] Add git hygiene for local node state and recovery outputs.
-  - Result: `.gitignore` now excludes `.local-ipfs`, `recovery/`, `.DS_Store`, and npm debug logs.
+## Integrity Check
 
-### Phase 5: Repository Publication
-- [x] Initialize the project as its own git repository.
-- [x] Set the remote to `https://github.com/bobofbuilding/ipsf-node.git`.
-- [x] Commit the repository-ready IPFS package state.
-- [x] Push `main` to GitHub.
+Confirm the installer matches the published SHA-256 file:
 
-## Verification
-- [x] `cd /workspace/projects/ipfs-evm-system && npm run check`
-- [x] `cd /workspace/projects/ipfs-evm-system && npm run test`
-- [x] `cd /workspace/projects/ipfs-evm-system && npm run build`
+```bash
+shasum -a 256 -c install-ipfs-node.sh.sha256
+```
 
-### Phase 6: Repository Hardening
-- [x] Add GitHub Actions CI for push and pull request verification.
-  - Result: `.github/workflows/ci.yml` now runs `npm install` and `npm run build` on `main` pushes and pull requests.
-- [x] Add standalone package metadata for repository consumers.
-  - Result: `package.json` now includes repository, homepage, bugs, keywords, license, and Node engine metadata.
+Expected result:
 
-### Phase 7: CLI Test Coverage
-- [x] Refactor operator-facing scripts for importable execution and dependency injection.
-  - Result: `check-node.mjs`, `preflight-node.mjs`, `publish-path.mjs`, and `export-recovery-artifacts.mjs` now expose testable runner functions while preserving CLI behavior.
-- [x] Add CLI-level tests for shipped operator entrypoints.
-  - Result: `test/scripts.test.mjs` now covers healthy and failing node checks, preflight behavior, publish-path usage and file publishing, and recovery-export artifact generation.
+- `install-ipfs-node.sh: OK`
 
-### Phase 8: Client Transport Coverage
-- [x] Add mocked transport tests for the shared IPFS client RPC contract.
-  - Result: `test/client.test.mjs` now covers `publishFile`, `publishDirectory`, `publishJson`, `pinCid`, `unpinCid`, `checkCidHealth`, `resolveCid`, `checkNodeHealth`, and `ensurePinned` with mocked fetch responses.
+## Bundle Validation
 
-### Phase 9: Bittrees Customer Expansion
-- [x] Add `nftfactory` to the active Bittrees customer list for the shared IPFS package.
-  - Result: the plan, design, README, integration docs, and task boards now treat `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory` as the active Bittrees customer set.
-- [x] Wire `nftfactory` into the shared package with project-level adapter scripts and shared gateway URL construction.
-  - Result: `projects/nftfactory/package.json` now exposes `ipfs:publish` and `ipfs:publish:metadata`; the new scripts use `projects/ipfs-evm-system`, and the web metadata route now builds gateway URLs through the shared helper.
+Validate the installer, checksum file, and manifest together through the repo validator:
 
-### Phase 10: Cross-Project Smoke Documentation
-- [x] Add one shared smoke-validation guide for the active Bittrees customers.
-  - Result: `docs/smoke-validation.md` now documents publish commands and expected outcomes for `crypto-directory`, `skillmesh`, `bitlogic`, and `nftfactory`.
-- [x] Add a concrete NFTFactory sample metadata artifact for the smoke path.
-  - Result: `projects/nftfactory/examples/smoke-metadata.json` can be published through `npm run ipfs:publish:metadata`.
+```bash
+mkdir -p dist/release
+mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json dist/release/
+npm run release:validate
+```
 
-### Phase 11: Smoke Orchestration Script
-- [x] Turn the cross-project smoke guide into one executable shared-repo command.
-  - Result: `npm run smoke:bittrees` now runs the four customer commands in sequence and prints a summarized CID/pin/gateway report.
-- [x] Add parser tests for smoke output normalization.
-  - Result: `test/smoke-bittrees.test.mjs` now covers JSON-style and line-oriented customer output parsing.
+Expected result:
 
-### Phase 12: Smoke JSON Output
-- [x] Add a machine-readable `--json` mode to `smoke:bittrees`.
-  - Result: the smoke runner can now emit one JSON report with node health and customer results for CI or ops tooling.
+- `release-installer:validated`
+- printed installer, checksum, manifest, and SHA-256 paths
 
-### Phase 13: Smoke Continue-On-Error
-- [x] Add `--continue-on-error` support to the smoke runner.
-  - Result: operators can now collect a full four-customer smoke report even when one customer fails.
+This confirms:
 
-### Phase 14: Smoke Customer Selection
-- [x] Add customer filtering support to the smoke runner.
-  - Result: operators can now target one customer with `--customer` or a subset with `--customers` instead of always running all four publish paths.
+- the checksum file references the expected installer filename
+- the checksum file matches the installer contents
+- the release manifest references the same installer and checksum files
+- the manifest SHA matches the installer contents
 
-### Phase 15: Installer and Node Setup
-- [x] Add a downloadable macOS/Linux node installer.
-  - Result: `install-ipfs-node.sh` can be downloaded directly from GitHub to install Kubo, initialize a repo, and write helper start/env files.
-- [x] Add a repo-local node setup command.
-  - Result: `npm run node:setup` configures a local repo, API port, gateway port, and default CORS headers when Kubo is already installed.
+## Provenance Check
 
-### Phase 16: Auto-Start Service Files
-- [x] Add generated service files for Linux and macOS installs.
-  - Result: the installer now writes a `systemd` unit and a `launchd` plist so operators can register the IPFS node for auto-start.
+Tagged releases also generate GitHub Artifact Attestations through `.github/workflows/release.yml`. Review the release or Actions UI for the attestation tied to the same tag and artifact set:
 
-### Phase 17: Release Packaging
-- [x] Add release-packaging artifacts for the downloadable installer.
-  - Result: `npm run release:prepare` now generates `dist/release/install-ipfs-node.sh` and a matching SHA-256 file.
-- [x] Add tagged GitHub release publication for installer assets.
-  - Result: pushes matching `v*` now publish the installer and checksum through `.github/workflows/release.yml`.
+- `install-ipfs-node.sh`
+- `install-ipfs-node.sh.sha256`
+- `release-manifest.json`
 
-### Phase 18: Release Manifest
-- [x] Add a machine-readable release manifest to packaged installer artifacts.
-  - Result: `npm run release:prepare` now also generates `dist/release/release-manifest.json` with package version, release tag, commit SHA, installer SHA, and Kubo version.
+Use that attestation to confirm the release bundle was produced by this repository's tagged release workflow, not just that the files are internally consistent.
 
-### Phase 19: Release Validation
-- [x] Add a one-command release bundle validator.
-  - Result: `npm run release:validate` now verifies `install-ipfs-node.sh`, `install-ipfs-node.sh.sha256`, and `release-manifest.json` together.
+## Run After Verification
 
-### Phase 20: Release Provenance
-- [x] Add GitHub Artifact Attestations for release artifacts.
-  - Result: tagged releases now generate build provenance attestations for the installer bundle through `.github/workflows/release.yml`.
+Once the release bundle passes all checks:
 
-### Phase 21: Release Verification Runbook
-- [x] Add an operator runbook for tagged release verification.
-  - Result: `docs/release-verification.md` now walks through checksum verification, `release:validate`, and GitHub attestation review for a downloaded release bundle.
-
-### Phase 22: Release Download Verification Command
-- [x] Add a one-command release download and validation path.
-  - Result: `npm run release:verify-download -- --tag <version>` now downloads the installer bundle from GitHub Releases and runs the existing validator against the downloaded files.
-
-## Blockers
-- None currently.
-
-## Publication Result
-- GitHub repo: `git@github.com:bobofbuilding/ipsf-node.git`
-- Branch: `main`
-- Initial publish commit: `4da4bae` (`Bootstrap IPFS storage repo`)
-
-## Open Questions
-- Should the package stay ESM-only, or should a later release add dual ESM/CJS packaging?
-- Should CAR exports join the recovery manifest flow for the highest-value artifact sets?
-
-## Dependencies
-- `projects/crypto-directory` for static-site publishing
-- `projects/skillmesh` for artifact publishing and resolution
-- `projects/bitlogic` for report, export, and evidence storage integration
-- `projects/nftfactory` for NFT metadata and media storage integration
-- local Kubo availability for runtime validation
-- GitHub repository access for repository publication
-
-## Role Ownership
-- `planner` owns future shared-library scope changes.
-- `builder` owns package surface, tests, and consumer-facing helper correctness.
-- `operator` owns backup-pin and recovery-path readiness.
-- `task-manager` owns repository-publication follow-through and cross-board cleanup.
-
-## Handoffs
-- Next handoff: consumer projects can now reference the standalone repo as the canonical shared-IPFS package source.
+```bash
+bash dist/release/install-ipfs-node.sh
+```

@@ -18,10 +18,15 @@ function parseArgs(argv) {
   const options = {
     releaseVersion: "latest",
     outputDir: path.join(rootDir, "dist", "release"),
+    json: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
+    if (token === "--json") {
+      options.json = true;
+      continue;
+    }
     if (token === "--tag") {
       options.releaseVersion = argv[index + 1] || options.releaseVersion;
       index += 1;
@@ -51,6 +56,18 @@ function buildDownloadBaseUrl(releaseVersion) {
   return "https://github.com/bobofbuilding/ipsf-node/releases/download/" + encodeURIComponent(releaseVersion);
 }
 
+function parseKeyValueLine(line) {
+  const text = String(line);
+  const separatorIndex = text.indexOf("=");
+  if (separatorIndex < 0) {
+    return null;
+  }
+  return {
+    key: text.slice(0, separatorIndex),
+    value: text.slice(separatorIndex + 1),
+  };
+}
+
 export async function runReleaseDownloadVerification({
   argv = process.argv.slice(2),
   fetchImpl = globalThis.fetch,
@@ -60,14 +77,27 @@ export async function runReleaseDownloadVerification({
   stdout = console.log,
   stderr = console.error,
 } = {}) {
+  const options = parseArgs(argv);
+
   if (typeof fetchImpl !== "function") {
-    stderr("release-download:invalid");
-    stderr("Fetch API is not available in this Node runtime");
+    if (options.json) {
+      stdout(JSON.stringify({
+        ok: false,
+        releaseVersion: options.releaseVersion,
+        outputDir: options.outputDir,
+        error: "Fetch API is not available in this Node runtime",
+      }, null, 2));
+    } else {
+      stderr("release-download:invalid");
+      stderr("Fetch API is not available in this Node runtime");
+    }
     return 1;
   }
 
-  const options = parseArgs(argv);
   const baseUrl = buildDownloadBaseUrl(options.releaseVersion);
+  const downloadedFiles = [];
+  const validationOut = [];
+  const validationErr = [];
 
   try {
     await mkdirImpl(options.outputDir, { recursive: true });
@@ -79,28 +109,87 @@ export async function runReleaseDownloadVerification({
       }
       const arrayBuffer = await response.arrayBuffer();
       await writeFileImpl(path.join(options.outputDir, fileName), Buffer.from(arrayBuffer));
-      stdout("downloaded=" + fileName);
+      downloadedFiles.push(fileName);
+      if (!options.json) {
+        stdout("downloaded=" + fileName);
+      }
     }
 
     const exitCode = await validateReleaseImpl({
       installerPath: path.join(options.outputDir, "install-ipfs-node.sh"),
       checksumPath: path.join(options.outputDir, "install-ipfs-node.sh.sha256"),
       manifestPath: path.join(options.outputDir, "release-manifest.json"),
-      stdout,
-      stderr,
+      stdout: (line) => {
+        validationOut.push(String(line));
+        if (!options.json) {
+          stdout(line);
+        }
+      },
+      stderr: (line) => {
+        validationErr.push(String(line));
+        if (!options.json) {
+          stderr(line);
+        }
+      },
     });
 
     if (exitCode !== 0) {
+      if (options.json) {
+        stdout(JSON.stringify({
+          ok: false,
+          releaseVersion: options.releaseVersion,
+          outputDir: options.outputDir,
+          downloadedFiles,
+          validation: {
+            ok: false,
+            stdout: validationOut,
+            stderr: validationErr,
+          },
+        }, null, 2));
+      }
       return exitCode;
     }
 
-    stdout("release-download:verified");
-    stdout("releaseVersion=" + options.releaseVersion);
-    stdout("outputDir=" + options.outputDir);
+    if (options.json) {
+      const validationFields = Object.fromEntries(
+        validationOut
+          .map(parseKeyValueLine)
+          .filter(Boolean)
+          .map((entry) => [entry.key, entry.value]),
+      );
+      stdout(JSON.stringify({
+        ok: true,
+        releaseVersion: options.releaseVersion,
+        outputDir: options.outputDir,
+        downloadedFiles,
+        validation: {
+          ok: true,
+          stdout: validationOut,
+          installer: validationFields.installer ?? null,
+          checksum: validationFields.checksum ?? null,
+          manifest: validationFields.manifest ?? null,
+          sha256: validationFields.sha256 ?? null,
+        },
+      }, null, 2));
+    } else {
+      stdout("release-download:verified");
+      stdout("releaseVersion=" + options.releaseVersion);
+      stdout("outputDir=" + options.outputDir);
+    }
     return 0;
   } catch (error) {
-    stderr("release-download:invalid");
-    stderr(error.message);
+    if (options.json) {
+      stdout(JSON.stringify({
+        ok: false,
+        releaseVersion: options.releaseVersion,
+        outputDir: options.outputDir,
+        downloadedFiles,
+        error: error.message,
+      }, null, 2));
+    } else {
+      stderr("release-download:invalid");
+      stderr(error.message);
+    }
     return 1;
   }
 }

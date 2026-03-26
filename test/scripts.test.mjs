@@ -287,6 +287,64 @@ test("runReleaseDownloadVerification reports download failures", async () => {
   assert.match(err[1], /Failed to download install-ipfs-node\.sh/);
 });
 
+
+test("runReleaseDownloadVerification emits machine-readable success output", async () => {
+  const writes = new Map();
+  const out = [];
+  const installer = Buffer.from('#!/usr/bin/env bash\necho ok\n');
+  const sha = '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be';
+  const responses = new Map([
+    ['https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh', installer],
+    ['https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh.sha256', Buffer.from(sha + '  install-ipfs-node.sh\n')],
+    ['https://github.com/bobofbuilding/ipsf-node/releases/latest/download/release-manifest.json', Buffer.from(JSON.stringify({
+      installerFile: 'install-ipfs-node.sh',
+      checksumFile: 'install-ipfs-node.sh.sha256',
+      installerSha256: sha,
+    }))],
+  ]);
+
+  const exitCode = await runReleaseDownloadVerification({
+    argv: ['--json', '--output-dir', '/tmp/verify-download-json'],
+    fetchImpl: async (url) => ({
+      ok: responses.has(url),
+      arrayBuffer: async () => responses.get(url),
+    }),
+    mkdirImpl: async () => {},
+    writeFileImpl: async (filePath, contents) => {
+      writes.set(filePath, contents);
+    },
+    validateReleaseImpl: (options) => runReleaseValidation({
+      ...options,
+      readFileImpl: async (filePath, encoding) => {
+        const value = writes.get(filePath);
+        if (value === undefined) {
+          throw new Error('Missing mocked file: ' + filePath);
+        }
+        if (encoding) {
+          return value.toString(encoding);
+        }
+        return value;
+      },
+    }),
+    stdout: (line) => out.push(line),
+    stderr: () => {},
+  });
+
+  assert.equal(exitCode, 0);
+  assert.equal(out.length, 1);
+  const payload = JSON.parse(out[0]);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.releaseVersion, 'latest');
+  assert.deepEqual(payload.downloadedFiles, [
+    'install-ipfs-node.sh',
+    'install-ipfs-node.sh.sha256',
+    'release-manifest.json',
+  ]);
+  assert.equal(payload.validation.ok, true);
+  assert.equal(payload.validation.sha256, sha);
+  assert.equal(payload.validation.installer, '/tmp/verify-download-json/install-ipfs-node.sh');
+});
+
 test("runPublishPath rejects missing argv path", async () => {
   const err = [];
   const exitCode = await runPublishPath({
