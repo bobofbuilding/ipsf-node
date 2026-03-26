@@ -138,6 +138,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add an operator runbook for tagged release verification.
   - Result: `docs/release-verification.md` now walks through checksum verification, `release:validate`, and GitHub attestation review for a downloaded release bundle.
 
+### Phase 22: Release Download Verification Command
+- [x] Add a one-command release download and validation path.
+  - Result: `npm run release:verify-download -- --tag <version>` now downloads the installer bundle from GitHub Releases and runs the existing validator against the downloaded files.
+
 ## Blockers
 - None currently.
 

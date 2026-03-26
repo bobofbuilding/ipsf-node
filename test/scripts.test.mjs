@@ -7,6 +7,7 @@ import { runPreflight } from "../scripts/preflight-node.mjs";
 import { runPublishPath } from "../scripts/publish-path.mjs";
 import { runReleasePackaging } from "../scripts/release-installer.mjs";
 import { runReleaseValidation } from "../scripts/validate-release.mjs";
+import { runReleaseDownloadVerification } from "../scripts/verify-release-download.mjs";
 import { parseSetupArgs, runNodeSetup } from "../scripts/setup-node.mjs";
 
 test("runCheckNode reports healthy node details", async () => {
@@ -215,6 +216,75 @@ test("runReleasePackaging writes installer, checksum, and manifest artifacts", a
   assert.equal(manifest.kuboVersion, "0.33.2");
   assert.equal(manifest.checksumFile, "install-ipfs-node.sh.sha256");
   assert.equal(out[0], "release-installer:prepared");
+});
+
+
+test("runReleaseDownloadVerification downloads and validates a tagged release bundle", async () => {
+  const writes = new Map();
+  const out = [];
+  const err = [];
+  const installer = Buffer.from('#!/usr/bin/env bash\necho ok\n');
+  const sha = '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be';
+  const responses = new Map([
+    ['https://github.com/bobofbuilding/ipsf-node/releases/download/v0.1.0/install-ipfs-node.sh', installer],
+    ['https://github.com/bobofbuilding/ipsf-node/releases/download/v0.1.0/install-ipfs-node.sh.sha256', Buffer.from(sha + '  install-ipfs-node.sh\n')],
+    ['https://github.com/bobofbuilding/ipsf-node/releases/download/v0.1.0/release-manifest.json', Buffer.from(JSON.stringify({
+      installerFile: 'install-ipfs-node.sh',
+      checksumFile: 'install-ipfs-node.sh.sha256',
+      installerSha256: sha,
+    }))],
+  ]);
+
+  const exitCode = await runReleaseDownloadVerification({
+    argv: ['--tag', 'v0.1.0', '--output-dir', '/tmp/verify-download'],
+    fetchImpl: async (url) => ({
+      ok: responses.has(url),
+      arrayBuffer: async () => responses.get(url),
+    }),
+    mkdirImpl: async () => {},
+    writeFileImpl: async (filePath, contents) => {
+      writes.set(filePath, contents);
+    },
+    validateReleaseImpl: (options) => runReleaseValidation({
+      ...options,
+      readFileImpl: async (filePath, encoding) => {
+        const value = writes.get(filePath);
+        if (value === undefined) {
+          throw new Error('Missing mocked file: ' + filePath);
+        }
+        if (encoding) {
+          return value.toString(encoding);
+        }
+        return value;
+      },
+    }),
+    stdout: (line) => out.push(line),
+    stderr: (line) => err.push(line),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(err, []);
+  assert.equal(writes.get('/tmp/verify-download/install-ipfs-node.sh').toString(), installer.toString());
+  assert.equal(out[0], 'downloaded=install-ipfs-node.sh');
+  assert.ok(out.includes('release-installer:validated'));
+  assert.equal(out.at(-2), 'releaseVersion=v0.1.0');
+  assert.equal(out.at(-1), 'outputDir=/tmp/verify-download');
+});
+
+test("runReleaseDownloadVerification reports download failures", async () => {
+  const err = [];
+  const exitCode = await runReleaseDownloadVerification({
+    argv: ['--tag', 'v0.1.0'],
+    fetchImpl: async () => ({ ok: false, arrayBuffer: async () => new ArrayBuffer(0) }),
+    mkdirImpl: async () => {},
+    writeFileImpl: async () => {},
+    stdout: () => {},
+    stderr: (line) => err.push(line),
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(err[0], 'release-download:invalid');
+  assert.match(err[1], /Failed to download install-ipfs-node\.sh/);
 });
 
 test("runPublishPath rejects missing argv path", async () => {

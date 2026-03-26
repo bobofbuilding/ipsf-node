@@ -4,7 +4,14 @@ Use this runbook when you download a tagged installer release from GitHub and wa
 
 ## Download
 
-Fetch the three release assets:
+Fast path from the repo checkout:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run release:verify-download -- --tag v0.1.0
+```
+
+Manual download path:
 
 ```bash
 curl -fsSL https://github.com/bobofbuilding/ipsf-node/releases/latest/download/install-ipfs-node.sh -o install-ipfs-node.sh

@@ -64,6 +64,7 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `bash -n ./scripts/start-node.sh`
 - `npm run release:prepare`
 - `npm run release:validate`
+- `npm run release:verify-download -- --tag <version>`
 
 `npm run build` is the baseline repository verification path and currently runs syntax checks plus gateway-helper, CLI-script, and client-transport tests.
 
@@ -101,7 +102,13 @@ shasum -a 256 -c install-ipfs-node.sh.sha256
 bash install-ipfs-node.sh
 ```
 
-Bundle validation after download:
+One-command bundle download and validation:
+
+```bash
+npm run release:verify-download -- --tag v0.1.0
+```
+
+Manual bundle validation after download:
 
 ```bash
 mkdir -p dist/release
