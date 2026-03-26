@@ -10,6 +10,45 @@ import { runReleaseValidation } from "../scripts/validate-release.mjs";
 import { runReleaseDownloadVerification } from "../scripts/verify-release-download.mjs";
 import { parseSetupArgs, runNodeSetup } from "../scripts/setup-node.mjs";
 
+const releaseInstaller = "#!/usr/bin/env bash\necho ok\n";
+const releaseSha = '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be';
+
+function createReleaseFixture({ includeValidationReport = false, validationReportSha = releaseSha } = {}) {
+  return async (filePath, encoding) => {
+    const normalizedPath = String(filePath);
+    let value;
+
+    if (normalizedPath.endsWith('install-ipfs-node.sh')) {
+      value = releaseInstaller;
+    } else if (normalizedPath.endsWith('install-ipfs-node.sh.sha256')) {
+      value = releaseSha + "  install-ipfs-node.sh\n";
+    } else if (normalizedPath.endsWith('release-manifest.json')) {
+      value = JSON.stringify({
+        installerFile: 'install-ipfs-node.sh',
+        checksumFile: 'install-ipfs-node.sh.sha256',
+        installerSha256: releaseSha,
+      });
+    } else if (normalizedPath.endsWith('release-validation-report.json')) {
+      if (!includeValidationReport) {
+        const error = new Error('Missing mocked file: ' + normalizedPath);
+        error.code = 'ENOENT';
+        throw error;
+      }
+      value = JSON.stringify({
+        ok: true,
+        installer: '/release/install-ipfs-node.sh',
+        checksum: '/release/install-ipfs-node.sh.sha256',
+        manifest: '/release/release-manifest.json',
+        sha256: validationReportSha,
+      });
+    } else {
+      throw new Error('Missing mocked file: ' + normalizedPath);
+    }
+
+    return encoding ? value : Buffer.from(value);
+  };
+}
+
 test("runCheckNode reports healthy node details", async () => {
   const out = [];
   const err = [];
@@ -219,27 +258,14 @@ test("runReleasePackaging writes installer, checksum, and manifest artifacts", a
 });
 
 
-test("runReleaseValidation emits machine-readable success output", async () => {
+test("runReleaseValidation emits machine-readable success output when no published report is present", async () => {
   const out = [];
   const exitCode = await runReleaseValidation({
     argv: ["--json"],
     installerPath: "/tmp/ipfs-release/install-ipfs-node.sh",
     checksumPath: "/tmp/ipfs-release/install-ipfs-node.sh.sha256",
     manifestPath: "/tmp/ipfs-release/release-manifest.json",
-    readFileImpl: async (filePath, encoding) => {
-      if (String(filePath).endsWith("install-ipfs-node.sh")) {
-        const installer = '#!/usr/bin/env bash\necho ok\n';
-        return encoding ? installer : Buffer.from(installer);
-      }
-      if (String(filePath).endsWith("install-ipfs-node.sh.sha256")) {
-        return '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be  install-ipfs-node.sh\n';
-      }
-      return JSON.stringify({
-        installerFile: 'install-ipfs-node.sh',
-        checksumFile: 'install-ipfs-node.sh.sha256',
-        installerSha256: '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be',
-      });
-    },
+    readFileImpl: createReleaseFixture(),
     stdout: (line) => out.push(line),
     stderr: () => {},
   });
@@ -247,8 +273,56 @@ test("runReleaseValidation emits machine-readable success output", async () => {
   assert.equal(exitCode, 0);
   const payload = JSON.parse(out[0]);
   assert.equal(payload.ok, true);
-  assert.equal(payload.sha256, '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be');
+  assert.equal(payload.sha256, releaseSha);
   assert.equal(payload.installer, '/tmp/ipfs-release/install-ipfs-node.sh');
+  assert.deepEqual(payload.validationReport, {
+    path: '/workspace/projects/ipfs-evm-system/dist/release/release-validation-report.json',
+    present: false,
+    matches: null,
+  });
+});
+
+test("runReleaseValidation verifies a matching published validation report when present", async () => {
+  const out = [];
+  const exitCode = await runReleaseValidation({
+    argv: ["--json"],
+    installerPath: "/tmp/ipfs-release/install-ipfs-node.sh",
+    checksumPath: "/tmp/ipfs-release/install-ipfs-node.sh.sha256",
+    manifestPath: "/tmp/ipfs-release/release-manifest.json",
+    validationReportPath: "/tmp/ipfs-release/release-validation-report.json",
+    readFileImpl: createReleaseFixture({ includeValidationReport: true }),
+    stdout: (line) => out.push(line),
+    stderr: () => {},
+  });
+
+  assert.equal(exitCode, 0);
+  const payload = JSON.parse(out[0]);
+  assert.deepEqual(payload.validationReport, {
+    path: '/tmp/ipfs-release/release-validation-report.json',
+    present: true,
+    matches: true,
+  });
+});
+
+test("runReleaseValidation rejects a mismatched published validation report", async () => {
+  const out = [];
+  const exitCode = await runReleaseValidation({
+    argv: ["--json"],
+    installerPath: "/tmp/ipfs-release/install-ipfs-node.sh",
+    checksumPath: "/tmp/ipfs-release/install-ipfs-node.sh.sha256",
+    manifestPath: "/tmp/ipfs-release/release-manifest.json",
+    validationReportPath: "/tmp/ipfs-release/release-validation-report.json",
+    readFileImpl: createReleaseFixture({ includeValidationReport: true, validationReportSha: 'badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb' }),
+    stdout: (line) => out.push(line),
+    stderr: () => {},
+  });
+
+  assert.equal(exitCode, 1);
+  const payload = JSON.parse(out[0]);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.validationReport.path, '/tmp/ipfs-release/release-validation-report.json');
+  assert.equal(payload.validationReport.matches, false);
+  assert.match(payload.error, /Validation report sha256 does not match installer contents/);
 });
 
 test("runReleaseValidation writes a JSON report file when requested", async () => {
@@ -259,20 +333,7 @@ test("runReleaseValidation writes a JSON report file when requested", async () =
     installerPath: "/tmp/ipfs-release/install-ipfs-node.sh",
     checksumPath: "/tmp/ipfs-release/install-ipfs-node.sh.sha256",
     manifestPath: "/tmp/ipfs-release/release-manifest.json",
-    readFileImpl: async (filePath, encoding) => {
-      if (String(filePath).endsWith("install-ipfs-node.sh")) {
-        const installer = '#!/usr/bin/env bash\necho ok\n';
-        return encoding ? installer : Buffer.from(installer);
-      }
-      if (String(filePath).endsWith("install-ipfs-node.sh.sha256")) {
-        return '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be  install-ipfs-node.sh\n';
-      }
-      return JSON.stringify({
-        installerFile: 'install-ipfs-node.sh',
-        checksumFile: 'install-ipfs-node.sh.sha256',
-        installerSha256: '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be',
-      });
-    },
+    readFileImpl: createReleaseFixture(),
     writeFileImpl: async (filePath, contents) => {
       writes.set(filePath, contents);
     },
@@ -285,6 +346,7 @@ test("runReleaseValidation writes a JSON report file when requested", async () =
   const filePayload = JSON.parse(writes.get('/tmp/ipfs-release/release-validation-report.json').toString('utf8'));
   assert.deepEqual(filePayload, stdoutPayload);
   assert.equal(filePayload.reportFile, '/tmp/ipfs-release/release-validation-report.json');
+  assert.equal(filePayload.validationReport.present, false);
 });
 
 test("runReleaseDownloadVerification downloads and validates a tagged release bundle", async () => {
@@ -511,7 +573,7 @@ test("runReleaseDownloadVerification reports published validation report mismatc
 
   assert.equal(exitCode, 1);
   assert.equal(err[0], 'release-download:invalid');
-  assert.match(err[1], /Published validation report does not match downloaded bundle/);
+  assert.match(err[1], /Validation report sha256 does not match installer contents/);
 });
 
 test("runReleaseDownloadVerification writes a JSON report file when requested", async () => {

@@ -25,6 +25,8 @@ function parseArgs(argv) {
     installerPath: path.join(defaultReleaseDir, "install-ipfs-node.sh"),
     checksumPath: path.join(defaultReleaseDir, "install-ipfs-node.sh.sha256"),
     manifestPath: path.join(defaultReleaseDir, "release-manifest.json"),
+    validationReportPath: path.join(defaultReleaseDir, "release-validation-report.json"),
+    validationReportExplicit: false,
     json: false,
     reportFile: null,
   };
@@ -69,6 +71,17 @@ function parseArgs(argv) {
     }
     if (token.startsWith("--manifest=")) {
       options.manifestPath = path.resolve(token.slice("--manifest=".length) || options.manifestPath);
+      continue;
+    }
+    if (token === "--validation-report") {
+      options.validationReportPath = path.resolve(argv[index + 1] || options.validationReportPath);
+      options.validationReportExplicit = true;
+      index += 1;
+      continue;
+    }
+    if (token.startsWith("--validation-report=")) {
+      options.validationReportPath = path.resolve(token.slice("--validation-report=".length) || options.validationReportPath);
+      options.validationReportExplicit = true;
     }
   }
 
@@ -88,6 +101,7 @@ export async function runReleaseValidation({
   installerPath,
   checksumPath,
   manifestPath,
+  validationReportPath,
   json: jsonMode,
   reportFile,
   readFileImpl = fs.readFile,
@@ -100,6 +114,8 @@ export async function runReleaseValidation({
     installerPath: installerPath ?? parsed.installerPath,
     checksumPath: checksumPath ?? parsed.checksumPath,
     manifestPath: manifestPath ?? parsed.manifestPath,
+    validationReportPath: validationReportPath ?? parsed.validationReportPath,
+    validationReportExplicit: validationReportPath !== undefined ? true : parsed.validationReportExplicit,
     json: jsonMode ?? parsed.json,
     reportFile: reportFile ?? parsed.reportFile,
   };
@@ -113,6 +129,7 @@ export async function runReleaseValidation({
     const checksum = parseChecksumFile(checksumText);
     const manifest = JSON.parse(manifestText);
     const installerFileName = path.basename(options.installerPath);
+    let validationReport = null;
 
     if (checksum.fileName !== installerFileName) {
       throw new Error("Checksum file does not reference the installer file");
@@ -130,12 +147,52 @@ export async function runReleaseValidation({
       throw new Error("Manifest installerSha256 does not match installer contents");
     }
 
+    if (options.validationReportPath) {
+      try {
+        const validationReportText = await readFileImpl(options.validationReportPath, "utf8");
+        const parsedValidationReport = JSON.parse(validationReportText);
+
+        if (parsedValidationReport.ok !== true) {
+          throw new Error("Validation report marks the release bundle as invalid");
+        }
+        if (path.basename(parsedValidationReport.installer || "") !== installerFileName) {
+          throw new Error("Validation report installer does not match installer file name");
+        }
+        if (path.basename(parsedValidationReport.checksum || "") !== path.basename(options.checksumPath)) {
+          throw new Error("Validation report checksum does not match checksum file name");
+        }
+        if (path.basename(parsedValidationReport.manifest || "") !== path.basename(options.manifestPath)) {
+          throw new Error("Validation report manifest does not match manifest file name");
+        }
+        if (parsedValidationReport.sha256 !== calculatedSha) {
+          throw new Error("Validation report sha256 does not match installer contents");
+        }
+
+        validationReport = {
+          path: options.validationReportPath,
+          present: true,
+          matches: true,
+        };
+      } catch (error) {
+        if (error && error.code === "ENOENT" && !options.validationReportExplicit) {
+          validationReport = {
+            path: options.validationReportPath,
+            present: false,
+            matches: null,
+          };
+        } else {
+          throw error;
+        }
+      }
+    }
+
     if (options.json) {
       await emitJsonResult({
         ok: true,
         installer: options.installerPath,
         checksum: options.checksumPath,
         manifest: options.manifestPath,
+        validationReport,
         reportFile: options.reportFile,
         sha256: calculatedSha,
       }, {
@@ -148,6 +205,10 @@ export async function runReleaseValidation({
       stdout("installer=" + options.installerPath);
       stdout("checksum=" + options.checksumPath);
       stdout("manifest=" + options.manifestPath);
+      if (validationReport?.present) {
+        stdout("release-validation-report:matched");
+        stdout("validationReport=" + options.validationReportPath);
+      }
       stdout("sha256=" + calculatedSha);
     }
     return 0;
@@ -158,6 +219,11 @@ export async function runReleaseValidation({
         installer: options.installerPath,
         checksum: options.checksumPath,
         manifest: options.manifestPath,
+        validationReport: options.validationReportPath ? {
+          path: options.validationReportPath,
+          present: null,
+          matches: false,
+        } : null,
         reportFile: options.reportFile,
         error: error.message,
       }, {

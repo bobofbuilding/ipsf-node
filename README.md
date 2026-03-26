@@ -65,6 +65,7 @@ The package is ESM-first and now ships TypeScript declarations at `src/index.d.t
 - `npm run release:prepare`
 - `npm run release:validate`
 - `npm run release:validate -- --json --report-file <path>`
+  verifies `release-validation-report.json` too when that file exists beside the bundle
 - `npm run release:verify-download -- --tag <version>`
 - `npm run release:verify-download -- --json`
 
@@ -119,9 +120,10 @@ Manual bundle validation after download:
 mkdir -p dist/release
 mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json release-validation-report.json dist/release/
 npm run release:validate
+# if release-validation-report.json is present, this also verifies that report matches the bundle
 ```
 
-Tagged releases also generate GitHub Artifact Attestations for the installer bundle through `.github/workflows/release.yml`, and they now publish `release-validation-report.json` alongside the installer assets.
+Tagged releases also generate GitHub Artifact Attestations for the installer bundle through `.github/workflows/release.yml`, and they now publish `release-validation-report.json` alongside the installer assets. When that file is present locally, `npm run release:validate` verifies it as part of the bundle.
 
 Full operator runbook: `docs/release-verification.md`
 

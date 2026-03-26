@@ -36,12 +36,13 @@ Expected result:
 
 ## Bundle Validation
 
-Validate the installer, checksum file, and manifest together through the repo validator:
+Validate the installer, checksum file, manifest, and any bundled published validation report together through the repo validator:
 
 ```bash
 mkdir -p dist/release
 mv install-ipfs-node.sh install-ipfs-node.sh.sha256 release-manifest.json release-validation-report.json dist/release/
 npm run release:validate
+# if release-validation-report.json is present, this also verifies that report matches the bundle
 npm run release:validate -- --json --report-file dist/release/release-validation-report.json
 ```
 
@@ -49,6 +50,7 @@ Expected result:
 
 - `release-installer:validated`
 - printed installer, checksum, manifest, and SHA-256 paths
+- `release-validation-report:matched` plus the validation report path when the published report is present
 - optional JSON report in `dist/release/release-validation-report.json` when `--json --report-file` is used
 
 This confirms:
@@ -57,6 +59,7 @@ This confirms:
 - the checksum file matches the installer contents
 - the release manifest references the same installer and checksum files
 - the manifest SHA matches the installer contents
+- any bundled release-validation-report.json agrees with the installer, checksum, manifest, and SHA
 
 ## Provenance Check
 

@@ -167,6 +167,7 @@ export async function runReleaseDownloadVerification({
       installerPath: path.join(options.outputDir, "install-ipfs-node.sh"),
       checksumPath: path.join(options.outputDir, "install-ipfs-node.sh.sha256"),
       manifestPath: path.join(options.outputDir, "release-manifest.json"),
+      validationReportPath: path.join(options.outputDir, "release-validation-report.json"),
       json: true,
       stdout: (line) => {
         validationOut.push(String(line));
