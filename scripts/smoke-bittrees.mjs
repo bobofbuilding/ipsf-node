@@ -37,8 +37,12 @@ function trimLine(value) {
 }
 
 export function parseSmokeArgs(argv = process.argv.slice(2)) {
+  const json = argv.includes("--json");
+  const continueOnError = argv.includes("--continue-on-error") || json;
+
   return {
-    json: argv.includes("--json"),
+    json,
+    continueOnError,
   };
 }
 
@@ -193,8 +197,11 @@ export async function runSmokeBittrees({
   stdout = console.log,
   stderr = console.error,
   json = false,
+  continueOnError = json,
+  client = new IpfsStorageClient(getIpfsStorageConfig()),
+  customers = BITTREES_CUSTOMERS,
+  runCustomer = runCustomerCommand,
 } = {}) {
-  const client = new IpfsStorageClient(getIpfsStorageConfig());
   const nodeHealth = await client.checkNodeHealth();
 
   if (!nodeHealth.available) {
@@ -217,12 +224,18 @@ export async function runSmokeBittrees({
   }
 
   const results = [];
-  for (const customer of BITTREES_CUSTOMERS) {
-    results.push(await runCustomerCommand(customer, {
+  for (const customer of customers) {
+    const result = await runCustomer(customer, {
       stdout,
       stderr,
       streamOutput: !json,
-    }));
+    });
+
+    results.push(result);
+
+    if (!result.ok && !continueOnError) {
+      break;
+    }
   }
 
   const report = buildSmokeReport(nodeHealth, results);

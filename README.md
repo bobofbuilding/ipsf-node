@@ -87,6 +87,7 @@ Defaults assume a local Kubo node:
 - `npm run publish:path -- <path> [source-project]`
 - `npm run smoke:bittrees`
   JSON mode: `npm run smoke:bittrees -- --json`
+  Continue on error: `npm run smoke:bittrees -- --continue-on-error`
 
 Local startup script:
 

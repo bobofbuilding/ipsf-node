@@ -5,12 +5,14 @@ import {
   buildSmokeReport,
   extractJsonObject,
   parseSmokeArgs,
+  runSmokeBittrees,
   summarizeSmokeOutput,
 } from "../scripts/smoke-bittrees.mjs";
 
-test("parseSmokeArgs detects json mode", () => {
-  assert.deepEqual(parseSmokeArgs([]), { json: false });
-  assert.deepEqual(parseSmokeArgs(["--json"]), { json: true });
+test("parseSmokeArgs detects json mode and continue-on-error", () => {
+  assert.deepEqual(parseSmokeArgs([]), { json: false, continueOnError: false });
+  assert.deepEqual(parseSmokeArgs(["--json"]), { json: true, continueOnError: true });
+  assert.deepEqual(parseSmokeArgs(["--continue-on-error"]), { json: false, continueOnError: true });
 });
 
 test("extractJsonObject returns trailing JSON payload from noisy output", () => {
@@ -80,4 +82,42 @@ test("buildSmokeReport produces machine-readable summary shape", () => {
   assert.equal(report.node.version, "0.30.0");
   assert.equal(report.customers.length, 2);
   assert.equal(typeof report.checkedAt, "string");
+});
+
+test("runSmokeBittrees stops on first failure by default", async () => {
+  const seen = [];
+  const exitCode = await runSmokeBittrees({
+    json: true,
+    continueOnError: false,
+    stdout: () => {},
+    stderr: () => {},
+    client: { checkNodeHealth: async () => ({ available: true, version: "0.30.0", id: "node-123" }) },
+    customers: [{ name: "one" }, { name: "two" }],
+    runCustomer: async (customer) => {
+      seen.push(customer.name);
+      return { customer: customer.name, ok: customer.name !== "one", exitCode: 1 };
+    },
+  });
+
+  assert.equal(exitCode, 1);
+  assert.deepEqual(seen, ["one"]);
+});
+
+test("runSmokeBittrees continues across failures when requested", async () => {
+  const seen = [];
+  const exitCode = await runSmokeBittrees({
+    json: true,
+    continueOnError: true,
+    stdout: () => {},
+    stderr: () => {},
+    client: { checkNodeHealth: async () => ({ available: true, version: "0.30.0", id: "node-123" }) },
+    customers: [{ name: "one" }, { name: "two" }],
+    runCustomer: async (customer) => {
+      seen.push(customer.name);
+      return { customer: customer.name, ok: customer.name !== "one", exitCode: customer.name === "one" ? 1 : 0 };
+    },
+  });
+
+  assert.equal(exitCode, 1);
+  assert.deepEqual(seen, ["one", "two"]);
 });

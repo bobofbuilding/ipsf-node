@@ -22,6 +22,13 @@ npm run smoke:bittrees -- --json
 
 This prints a single JSON report with node health and one result object per customer.
 
+To keep going after the first failing customer and still collect the full report:
+
+```bash
+cd /workspace/projects/ipfs-evm-system
+npm run smoke:bittrees -- --continue-on-error
+```
+
 ## Preconditions
 
 - the shared Kubo node is reachable through the configured API and gateway URLs

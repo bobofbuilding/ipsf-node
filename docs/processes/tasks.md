@@ -98,6 +98,10 @@ Design-impact review result: the current board now needs to track repository/bui
 - [x] Add a machine-readable `--json` mode to `smoke:bittrees`.
   - Result: the smoke runner can now emit one JSON report with node health and customer results for CI or ops tooling.
 
+### Phase 13: Smoke Continue-On-Error
+- [x] Add `--continue-on-error` support to the smoke runner.
+  - Result: operators can now collect a full four-customer smoke report even when one customer fails.
+
 ## Blockers
 - None currently.
 
