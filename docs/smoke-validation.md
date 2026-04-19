@@ -67,14 +67,14 @@ Expected result:
 ### SkillMesh
 
 ```bash
-cd /workspace/projects/skillmesh
-npm run ipfs:publish:skill-definition
+cd /workspace/projects/ipfs-evm-system
+npm run publish:skillmesh-definition -- /workspace/projects/skillmesh/examples/smoke-skill-definition.json
 ```
 
 Expected result:
 
 - prints a JSON result with a CID and gateway URL
-- returns a published `skill-definition` artifact through the shared package
+- returns a published `skill-definition` artifact through the shared SkillMesh adapter in `ipfs-evm-system`
 
 ### Bitlogic
 

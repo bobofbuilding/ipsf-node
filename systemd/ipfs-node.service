@@ -1,0 +1,15 @@
+[Unit]
+Description=Bittrees IPFS Kubo Node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__ROOT_DIR__
+EnvironmentFile=__ROOT_DIR__/.env
+ExecStart=__ROOT_DIR__/scripts/start-node.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

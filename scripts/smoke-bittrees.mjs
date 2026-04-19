@@ -17,8 +17,14 @@ const BITTREES_CUSTOMERS = [
   },
   {
     name: "skillmesh",
-    cwd: path.join(workspaceDir, "skillmesh"),
-    command: ["npm", "run", "ipfs:publish:skill-definition"],
+    cwd: rootDir,
+    command: [
+      "npm",
+      "run",
+      "publish:skillmesh-definition",
+      "--",
+      path.join(workspaceDir, "skillmesh", "examples", "smoke-skill-definition.json"),
+    ],
   },
   {
     name: "bitlogic",

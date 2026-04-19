@@ -1,0 +1,15 @@
+[Unit]
+Description=Bittrees IPFS API Proxy
+After=network-online.target ipfs-node.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__ROOT_DIR__
+EnvironmentFile=__ROOT_DIR__/.env
+ExecStart=/usr/bin/env npm run api:proxy
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -5,6 +5,9 @@ export interface IpfsStorageClientOptions {
   gatewayBaseUrl?: string;
   fetchImpl?: typeof fetch;
   defaultSourceProject?: string | null;
+  apiBearerToken?: string | null;
+  apiBasicAuthUsername?: string | null;
+  apiBasicAuthPassword?: string | null;
 }
 
 export interface PublishResult {
@@ -104,9 +107,40 @@ export function detectPublishTarget(fileOrDirectoryPath: string): Promise<{
 export function getIpfsStorageConfig(env?: NodeJS.ProcessEnv): {
   apiBaseUrl: string;
   gatewayBaseUrl: string;
+  apiBearerToken: string | null;
+  apiBasicAuthUsername: string | null;
+  apiBasicAuthPassword: string | null;
+  apiProxyPort: string;
+  apiProxyUpstreamUrl: string;
   defaultSourceProject: string | null;
   cliPath: string;
   repoPath: string;
+};
+
+export function getIpfsApiProxyAuthMode(env?: NodeJS.ProcessEnv): "bearer" | "basic" | "public-override" | "none";
+export function authorizeIpfsApiProxyRequest(
+  headers: Record<string, string | string[] | undefined>,
+  env?: NodeJS.ProcessEnv
+): {
+  ok: boolean;
+  authMode: "bearer" | "basic" | "public-override" | "none";
+  statusCode?: number;
+  message?: string;
+};
+export function createIpfsApiProxyServer(input?: {
+  env?: NodeJS.ProcessEnv;
+  fetchImpl?: typeof fetch;
+  upstreamBaseUrl?: string;
+  host?: string;
+  port?: number;
+  stdout?: (line: string) => void;
+  stderr?: (line: string) => void;
+}): {
+  host: string;
+  port: number;
+  upstreamBaseUrl: string;
+  server: import("node:http").Server;
+  listen(): Promise<{ host: string; port: number; upstreamBaseUrl: string }>;
 };
 
 export function normalizeIpfsCid(value: string): string;
@@ -163,6 +197,32 @@ export function publishJsonArtifact(
     pin?: boolean;
     wrapWithDirectory?: boolean;
     extraMetadata?: Record<string, string | number | boolean | null | undefined>;
+  },
+): Promise<PublishResult & {
+  artifactKind: string;
+  metadata: MetadataRecord;
+  verified: boolean;
+  pinStatus: { cid: string; pinned: boolean };
+  health: CidHealthResult;
+}>;
+
+export function createSkillMeshDefinitionMetadata(definition: Record<string, unknown> | null): {
+  skillName: string;
+  skillVersion: string;
+  runtimeType: string;
+  entrypoint?: string;
+  chainable?: string;
+  computeCost?: string;
+};
+
+export function publishSkillMeshDefinition(
+  client: IpfsStorageClient,
+  input: {
+    inputPath: string;
+    sourceProject?: string;
+    readFileImpl?: (filePath: string, encoding: string) => Promise<string>;
+    pin?: boolean;
+    wrapWithDirectory?: boolean;
   },
 ): Promise<PublishResult & {
   artifactKind: string;

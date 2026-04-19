@@ -79,12 +79,82 @@ Copy values from `.env.example` into the environment used by the consuming proje
 
 - `IPFS_API_BASE_URL`
 - `IPFS_GATEWAY_BASE_URL`
+- `IPFS_API_BEARER_TOKEN`
+- `IPFS_API_BASIC_AUTH_USERNAME`
+- `IPFS_API_BASIC_AUTH_PASSWORD`
 - `IPFS_DEFAULT_SOURCE_PROJECT`
 
 Defaults assume a local Kubo node:
 
 - API: `http://127.0.0.1:5001`
 - Gateway: `http://127.0.0.1:8080`
+
+For protected API endpoints, prefer `IPFS_API_BEARER_TOKEN`. Basic auth is also supported when both `IPFS_API_BASIC_AUTH_USERNAME` and `IPFS_API_BASIC_AUTH_PASSWORD` are set.
+
+For zero-downtime bearer token rotation, the proxy also accepts `IPFS_API_BEARER_TOKEN_SECONDARY`. During rotation, keep the current token in `IPFS_API_BEARER_TOKEN`, place the next token in `IPFS_API_BEARER_TOKEN_SECONDARY`, redeploy the app with the next token, verify uploads, then promote the next token into `IPFS_API_BEARER_TOKEN` and remove the secondary value.
+
+When exposing the writable Kubo API through a public ingress such as Cloudflare Tunnel, do not point the public hostname at raw Kubo on `127.0.0.1:5001`. Run `npm run api:proxy` and route the tunnel to `http://127.0.0.1:${IPFS_API_PROXY_PORT:-5002}` instead so auth is enforced locally before requests reach Kubo.
+
+An example Cloudflare Tunnel config for that pattern is in `examples/cloudflared-ipfs-api-config.yml`. Replace the tunnel UUID, credentials path, and hostname as needed, then run `cloudflared tunnel --config <that-file> run`.
+
+This repo also includes `npm run tunnel:start`, which accepts any one of:
+
+- `IPFS_CLOUDFLARED_TUNNEL_TOKEN`
+- `IPFS_CLOUDFLARED_CONFIG`
+- `IPFS_CLOUDFLARED_TUNNEL_ID`
+
+Recommended operator flow on the host:
+
+1. `npm run node:setup`
+2. `./scripts/start-node.sh`
+3. `npm run api:proxy`
+4. `npm run tunnel:start`
+
+For repo-local process management without systemd, use:
+
+- `npm run stack:start`
+- `npm run stack:status`
+- `npm run stack:stop`
+
+These keep pidfiles and logs under `.runtime/`.
+
+For real host-level detached processes that survive the current shell session and can be controlled from the repo, use:
+
+- `npm run host:stack:start`
+- `npm run host:stack:status`
+- `npm run host:stack:stop`
+
+These keep pidfiles and logs under `.runtime-host/`. Use the host-level commands for the live Cloudflare-connected stack.
+
+When `systemd` is not available on the host, use the long-running supervisor instead:
+
+- `npm run host:supervisor`
+
+That keeps the Kubo daemon, local auth proxy, and Cloudflare tunnel under one parent process and restarts them if they exit. It also writes runtime state to `.runtime-host/supervisor-state.json`.
+
+For reboot startup on hosts that use cron, the repo also includes:
+
+- `./scripts/start-host-supervisor.sh`
+
+Recommended `@reboot` entry:
+
+```bash
+@reboot /workspace/projects/ipfs-evm-system/scripts/start-host-supervisor.sh
+```
+
+On hosts with systemd available, install persistent user units with:
+
+- `npm run systemd:install`
+
+That renders service templates from `systemd/` into `~/.config/systemd/user/`, enables:
+
+- `ipfs-node.service`
+- `ipfs-api-proxy.service`
+- `ipfs-cloudflared.service`
+
+and leaves final service start/stop/status under `systemctl --user`.
+
+When using a config file, point the public hostname at `http://127.0.0.1:5002`, not raw Kubo on `127.0.0.1:5001`.
 
 ## Install and Setup
 
@@ -148,6 +218,7 @@ The installer also writes OS service templates:
 - `npm run node:check`
 - `npm run recovery:export -- [output-dir]`
 - `npm run publish:path -- <path> [source-project]`
+- `npm run publish:skillmesh-definition -- <definition-json-path>`
 - `npm run smoke:bittrees`
   JSON mode: `npm run smoke:bittrees -- --json`
   Continue on error: `npm run smoke:bittrees -- --continue-on-error`
@@ -167,6 +238,9 @@ import { IpfsStorageClient, buildGatewayUrl } from "@workspace/ipfs-storage";
 const client = new IpfsStorageClient({
   apiBaseUrl: process.env.IPFS_API_BASE_URL,
   gatewayBaseUrl: process.env.IPFS_GATEWAY_BASE_URL,
+  apiBearerToken: process.env.IPFS_API_BEARER_TOKEN,
+  apiBasicAuthUsername: process.env.IPFS_API_BASIC_AUTH_USERNAME,
+  apiBasicAuthPassword: process.env.IPFS_API_BASIC_AUTH_PASSWORD,
   defaultSourceProject: "crypto-directory",
 });
 
@@ -181,7 +255,8 @@ console.log(buildGatewayUrl({
 }));
 ```
 
-Consumer-specific adapters should live in the projects that use this package.
+SkillMesh now has a shared adapter in this project: `npm run publish:skillmesh-definition -- <definition-json-path>`.
+Other consumer-specific adapters should live in the projects that use this package when they need project-specific metadata or validation.
 
 ## Accepted First-Version Policy
 

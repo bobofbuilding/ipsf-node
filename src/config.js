@@ -29,6 +29,11 @@ export function getIpfsStorageConfig(env = process.env, { existsSync = fs.exists
   return {
     apiBaseUrl: env.IPFS_API_BASE_URL ?? "http://127.0.0.1:5001",
     gatewayBaseUrl: env.IPFS_GATEWAY_BASE_URL ?? "http://127.0.0.1:8080",
+    apiBearerToken: env.IPFS_API_BEARER_TOKEN ?? null,
+    apiBasicAuthUsername: env.IPFS_API_BASIC_AUTH_USERNAME ?? null,
+    apiBasicAuthPassword: env.IPFS_API_BASIC_AUTH_PASSWORD ?? null,
+    apiProxyPort: env.IPFS_API_PROXY_PORT ?? "5002",
+    apiProxyUpstreamUrl: env.IPFS_API_PROXY_UPSTREAM_URL ?? "http://127.0.0.1:5001",
     defaultSourceProject: env.IPFS_DEFAULT_SOURCE_PROJECT ?? null,
     cliPath: env.IPFS_CLI_PATH ?? resolveDefaultCliPath(existsSync),
     repoPath: env.IPFS_PATH ?? path.join(rootDir, ".local-ipfs"),

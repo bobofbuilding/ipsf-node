@@ -112,6 +112,44 @@ test("publishJson emits json artifact through add endpoint", async () => {
   assert.equal(result.sourceProject, "skillmesh");
 });
 
+test("client sends bearer auth headers to IPFS API requests", async () => {
+  const calls = [];
+  const client = new IpfsStorageClient({
+    apiBearerToken: "token-123",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return createJsonResponse({ Pins: ["bafy-pin"] });
+    },
+  });
+
+  await client.pinCid({ cid: "bafy-pin" });
+
+  assert.equal(calls[0].options.headers.Authorization, "Bearer token-123");
+});
+
+test("client sends basic auth headers to IPFS API requests", async () => {
+  const calls = [];
+  const client = new IpfsStorageClient({
+    apiBasicAuthUsername: "admin",
+    apiBasicAuthPassword: "secret",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return createJsonResponse({ Pins: ["bafy-pin"] });
+    },
+  });
+
+  await client.pinCid({ cid: "bafy-pin" });
+
+  assert.equal(calls[0].options.headers.Authorization, "Basic " + Buffer.from("admin:secret", "utf8").toString("base64"));
+});
+
+test("client rejects partial basic auth configuration", () => {
+  assert.throws(
+    () => new IpfsStorageClient({ apiBasicAuthUsername: "admin" }),
+    /IPFS API basic auth requires both IPFS_API_BASIC_AUTH_USERNAME and IPFS_API_BASIC_AUTH_PASSWORD/,
+  );
+});
+
 test("pinCid and unpinCid call the expected RPC endpoints", async () => {
   const urls = [];
   const client = new IpfsStorageClient({

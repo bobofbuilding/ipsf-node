@@ -9,6 +9,7 @@ import { runReleasePackaging } from "../scripts/release-installer.mjs";
 import { runReleaseValidation } from "../scripts/validate-release.mjs";
 import { runReleaseDownloadVerification } from "../scripts/verify-release-download.mjs";
 import { parseSetupArgs, runNodeSetup } from "../scripts/setup-node.mjs";
+import { getIpfsStorageConfig } from "../src/config.js";
 
 const releaseInstaller = "#!/usr/bin/env bash\necho ok\n";
 const releaseSha = '0d7a2a90fd5f06a2eaf2b41ab8ee127b13dafa466f48f7f92ad624edce3942be';
@@ -722,4 +723,25 @@ test("runRecoveryExport writes sorted recovery artifacts", async () => {
   assert.deepEqual(manifest.recursivePins, ["cid-a", "cid-b"]);
   assert.equal(manifest.pinCount, 2);
   assert.equal(out.at(-1), "pin-count=2");
+});
+
+
+test("getIpfsStorageConfig reads IPFS API auth env vars", () => {
+  const config = getIpfsStorageConfig({
+    IPFS_API_BASE_URL: "https://ipfs.example.com",
+    IPFS_GATEWAY_BASE_URL: "https://gateway.example.com",
+    IPFS_API_BEARER_TOKEN: "token-123",
+    IPFS_API_BASIC_AUTH_USERNAME: "admin",
+    IPFS_API_BASIC_AUTH_PASSWORD: "secret",
+    IPFS_DEFAULT_SOURCE_PROJECT: "ipfs-evm-system",
+  }, {
+    existsSync: () => false,
+  });
+
+  assert.equal(config.apiBaseUrl, "https://ipfs.example.com");
+  assert.equal(config.gatewayBaseUrl, "https://gateway.example.com");
+  assert.equal(config.apiBearerToken, "token-123");
+  assert.equal(config.apiBasicAuthUsername, "admin");
+  assert.equal(config.apiBasicAuthPassword, "secret");
+  assert.equal(config.defaultSourceProject, "ipfs-evm-system");
 });

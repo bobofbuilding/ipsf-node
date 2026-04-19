@@ -1,5 +1,11 @@
 .DS_Store
+.env
 node_modules/
 .local-ipfs/
 recovery/
 npm-debug.log*
+.cloudflared/
+.runtime/
+.runtime-host/
+.systemd-rendered/
+dist/

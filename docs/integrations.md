@@ -21,9 +21,15 @@ Current entrypoint:
 Expected usage:
 
 - prepare skill manifests and artifact payloads locally
-- publish artifacts through `publishFile` or `publishDirectory`
+- publish skill definitions through `npm run publish:skillmesh-definition -- <definition-json-path>` in `ipfs-evm-system`
 - resolve artifacts through `resolveCid`
 - keep runtime and protocol logic in `skillmesh`
+
+Current entrypoints:
+
+- `cd /workspace/projects/ipfs-evm-system && npm run publish:skillmesh-definition -- /workspace/projects/skillmesh/examples/smoke-skill-definition.json`
+- `cd /workspace/projects/skillmesh && npm run ipfs:publish:skill-definition`
+  delegates to the shared adapter in `ipfs-evm-system`
 
 ## Bitlogic
 

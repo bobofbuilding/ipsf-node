@@ -9,6 +9,9 @@ import { collectDirectoryFiles, readPathAsBlob } from "./files.js";
  * @property {string} [gatewayBaseUrl]
  * @property {typeof fetch} [fetchImpl]
  * @property {string} [defaultSourceProject]
+ * @property {string | null} [apiBearerToken]
+ * @property {string | null} [apiBasicAuthUsername]
+ * @property {string | null} [apiBasicAuthPassword]
  */
 
 /**
@@ -30,9 +33,16 @@ export class IpfsStorageClient {
     this.gatewayBaseUrl = (options.gatewayBaseUrl ?? "http://127.0.0.1:8080").replace(/\/+$/, "");
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
     this.defaultSourceProject = options.defaultSourceProject ?? null;
+    this.apiBearerToken = typeof options.apiBearerToken === "string" ? options.apiBearerToken.trim() : "";
+    this.apiBasicAuthUsername = typeof options.apiBasicAuthUsername === "string" ? options.apiBasicAuthUsername.trim() : "";
+    this.apiBasicAuthPassword = typeof options.apiBasicAuthPassword === "string" ? options.apiBasicAuthPassword.trim() : "";
 
     if (typeof this.fetchImpl !== "function") {
       throw new Error("IpfsStorageClient requires a fetch implementation.");
+    }
+
+    if ((this.apiBasicAuthUsername && !this.apiBasicAuthPassword) || (!this.apiBasicAuthUsername && this.apiBasicAuthPassword)) {
+      throw new Error("IPFS API basic auth requires both IPFS_API_BASIC_AUTH_USERNAME and IPFS_API_BASIC_AUTH_PASSWORD.");
     }
   }
 
@@ -272,6 +282,7 @@ export class IpfsStorageClient {
     const response = await this.fetchImpl(url, {
       method: "POST",
       body: form,
+      headers: this.#apiAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -328,11 +339,30 @@ export class IpfsStorageClient {
    * @param {string} url
    */
   async #postJson(url) {
-    const response = await this.fetchImpl(url, { method: "POST" });
+    const response = await this.fetchImpl(url, {
+      method: "POST",
+      headers: this.#apiAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`IPFS RPC failed with status ${response.status}: ${url}`);
     }
     return response.json();
+  }
+
+  #apiAuthHeaders() {
+    if (this.apiBearerToken) {
+      return {
+        Authorization: `Bearer ${this.apiBearerToken}`,
+      };
+    }
+
+    if (this.apiBasicAuthUsername && this.apiBasicAuthPassword) {
+      return {
+        Authorization: "Basic " + Buffer.from(`${this.apiBasicAuthUsername}:${this.apiBasicAuthPassword}`, "utf8").toString("base64"),
+      };
+    }
+
+    return undefined;
   }
 
   /**
