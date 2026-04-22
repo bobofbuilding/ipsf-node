@@ -151,6 +151,18 @@ test("parseSetupArgs reads ports and repo overrides", () => {
   assert.deepEqual(options.corsOrigins, ["http://localhost:8081"]);
 });
 
+test("parseSetupArgs enables local-only mode when requested", () => {
+  const options = parseSetupArgs(["--local-only"], {
+    apiBaseUrl: "http://127.0.0.1:5001",
+    gatewayBaseUrl: "http://127.0.0.1:8080",
+    cliPath: "ipfs",
+    repoPath: "/mock/repo",
+    localOnly: false,
+  });
+
+  assert.equal(options.localOnly, true);
+});
+
 test("runNodeSetup initializes and configures a repo", () => {
   const out = [];
   const err = [];
@@ -191,6 +203,47 @@ test("runNodeSetup initializes and configures a repo", () => {
   ]);
   assert.equal(out[0], "ipfs-repo:initialized");
   assert.equal(out.at(-1), "startCommand=IPFS_PATH=/mock/repo /mock/ipfs daemon");
+});
+
+test("runNodeSetup configures local-only runtimes", () => {
+  const calls = [];
+  const out = [];
+  const exitCode = runNodeSetup({
+    config: {
+      apiBaseUrl: "http://127.0.0.1:5001",
+      gatewayBaseUrl: "http://127.0.0.1:8080",
+      cliPath: "/mock/ipfs",
+      repoPath: "/mock/repo",
+      localOnly: true,
+    },
+    existsSync: (filePath) => filePath === "/mock/repo/config" ? false : true,
+    mkdirSync: () => {},
+    spawnSync: (_cliPath, args) => {
+      calls.push(args);
+      return { status: 0, stdout: "", stderr: "" };
+    },
+    stdout: (line) => out.push(line),
+    stderr: () => {},
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(calls.slice(0, 6), [
+    ["init", "--profile=server"],
+    ["config", "Addresses.API", "/ip4/127.0.0.1/tcp/5001"],
+    ["config", "Addresses.Gateway", "/ip4/127.0.0.1/tcp/8080"],
+    ["config", "--json", "Addresses.Swarm", JSON.stringify([])],
+    ["config", "--json", "Discovery.MDNS.Enabled", JSON.stringify(false)],
+    ["config", "--json", "API.HTTPHeaders.Access-Control-Allow-Origin", JSON.stringify([
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:4173",
+      "http://127.0.0.1:4173",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+    ])],
+  ]);
+  assert.equal(out.at(-2), "localOnly=true");
+  assert.match(out.at(-1), /^startCommand=IPFS_LOCAL_ONLY=1 IPFS_PATH=\/mock\/repo \/mock\/ipfs daemon$/);
 });
 
 test("runNodeSetup skips init when the repo already exists", () => {
@@ -734,6 +787,7 @@ test("getIpfsStorageConfig reads IPFS API auth env vars", () => {
     IPFS_API_BASIC_AUTH_USERNAME: "admin",
     IPFS_API_BASIC_AUTH_PASSWORD: "secret",
     IPFS_DEFAULT_SOURCE_PROJECT: "ipfs-evm-system",
+    IPFS_LOCAL_ONLY: "true",
   }, {
     existsSync: () => false,
   });
@@ -744,4 +798,5 @@ test("getIpfsStorageConfig reads IPFS API auth env vars", () => {
   assert.equal(config.apiBasicAuthUsername, "admin");
   assert.equal(config.apiBasicAuthPassword, "secret");
   assert.equal(config.defaultSourceProject, "ipfs-evm-system");
+  assert.equal(config.localOnly, true);
 });

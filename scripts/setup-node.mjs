@@ -38,6 +38,7 @@ export function parseSetupArgs(argv = process.argv.slice(2), config = getIpfsSto
     gatewayPort: parsePort(defaultGatewayPort, "gatewayPort"),
     profile: "server",
     corsOrigins: [...DEFAULT_CORS_ORIGINS],
+    localOnly: Boolean(config.localOnly),
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -112,6 +113,17 @@ export function parseSetupArgs(argv = process.argv.slice(2), config = getIpfsSto
 
     if (arg === "--no-default-cors") {
       options.corsOrigins = [];
+      continue;
+    }
+
+    if (arg === "--local-only") {
+      options.localOnly = true;
+      continue;
+    }
+
+    if (arg === "--enable-swarm") {
+      options.localOnly = false;
+      continue;
     }
   }
 
@@ -175,6 +187,10 @@ export function runNodeSetup({
 
     runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "Addresses.API", "/ip4/127.0.0.1/tcp/" + options.apiPort]);
     runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "Addresses.Gateway", "/ip4/127.0.0.1/tcp/" + options.gatewayPort]);
+    if (options.localOnly) {
+      runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "--json", "Addresses.Swarm", JSON.stringify([])]);
+      runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "--json", "Discovery.MDNS.Enabled", JSON.stringify(false)]);
+    }
     runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "--json", "API.HTTPHeaders.Access-Control-Allow-Origin", JSON.stringify(options.corsOrigins)]);
     runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "--json", "API.HTTPHeaders.Access-Control-Allow-Methods", JSON.stringify(["GET", "POST", "PUT"])]);
     runIpfs(spawnSync, options.cliPath, options.repoPath, ["config", "--json", "API.HTTPHeaders.Access-Control-Allow-Credentials", JSON.stringify(["true"])]);
@@ -189,7 +205,8 @@ export function runNodeSetup({
   stdout("repoPath=" + options.repoPath);
   stdout("apiBaseUrl=http://127.0.0.1:" + options.apiPort);
   stdout("gatewayBaseUrl=http://127.0.0.1:" + options.gatewayPort);
-  stdout("startCommand=IPFS_PATH=" + options.repoPath + " " + options.cliPath + " daemon");
+  stdout("localOnly=" + String(options.localOnly));
+  stdout("startCommand=" + (options.localOnly ? "IPFS_LOCAL_ONLY=1 " : "") + "IPFS_PATH=" + options.repoPath + " " + options.cliPath + " daemon");
   return 0;
 }
 

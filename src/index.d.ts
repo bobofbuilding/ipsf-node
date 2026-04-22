@@ -115,6 +115,7 @@ export function getIpfsStorageConfig(env?: NodeJS.ProcessEnv): {
   defaultSourceProject: string | null;
   cliPath: string;
   repoPath: string;
+  localOnly: boolean;
 };
 
 export function getIpfsApiProxyAuthMode(env?: NodeJS.ProcessEnv): "bearer" | "basic" | "public-override" | "none";

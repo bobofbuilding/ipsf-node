@@ -156,6 +156,8 @@ and leaves final service start/stop/status under `systemctl --user`.
 
 When using a config file, point the public hostname at `http://127.0.0.1:5002`, not raw Kubo on `127.0.0.1:5001`.
 
+For restricted container or CI-style runtimes that cannot bind swarm sockets, set `IPFS_LOCAL_ONLY=1`. That keeps the local API and gateway enabled while disabling swarm listeners and mDNS so the writable API proxy and Cloudflare tunnel can still run.
+
 ## Install and Setup
 
 Downloadable bootstrap for macOS and Linux:

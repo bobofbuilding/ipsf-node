@@ -15,6 +15,13 @@
 - API enabled for local trusted callers
 - gateway enabled for CID resolution and health checks
 
+For restricted container runtimes, `IPFS_LOCAL_ONLY=1` is supported. In that mode the node stays local-only:
+
+- API enabled
+- gateway enabled
+- swarm listeners disabled
+- mDNS disabled
+
 ## Startup Expectations
 
 The shared library assumes:

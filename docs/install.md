@@ -43,6 +43,8 @@ Supported setup flags:
 - `--profile <name>`
 - `--cors-origin <origin>`
 - `--no-default-cors`
+- `--local-only`
+- `--enable-swarm`
 
 ## Preflight
 
@@ -67,6 +69,8 @@ After install or setup:
 cd /workspace/projects/ipfs-evm-system
 ./scripts/start-node.sh
 ```
+
+For restricted containers that cannot bind swarm sockets, export `IPFS_LOCAL_ONLY=1` before starting the node. That keeps API and gateway listeners enabled while disabling swarm listeners and mDNS.
 
 Then in another shell:
 

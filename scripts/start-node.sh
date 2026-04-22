@@ -45,10 +45,21 @@ IPFS_REPO_PATH="${IPFS_PATH:-$DEFAULT_REPO_PATH}"
 
 export IPFS_PATH="$IPFS_REPO_PATH"
 
+normalize_truthy_flag() {
+  local value
+  value="$(echo "${1:-}" | tr '[:upper:]' '[:lower:]')"
+  [[ "$value" == "1" || "$value" == "true" || "$value" == "yes" || "$value" == "on" ]]
+}
+
 if [ ! -f "$IPFS_REPO_PATH/config" ]; then
   echo "Initializing IPFS repo at $IPFS_REPO_PATH"
   mkdir -p "$IPFS_REPO_PATH"
   "$IPFS_CLI_PATH" init --profile=server
+fi
+
+if normalize_truthy_flag "${IPFS_LOCAL_ONLY:-}"; then
+  "$IPFS_CLI_PATH" config --json Addresses.Swarm '[]' >/dev/null
+  "$IPFS_CLI_PATH" config --json Discovery.MDNS.Enabled 'false' >/dev/null
 fi
 
 echo "Starting shared IPFS node from $IPFS_REPO_PATH"

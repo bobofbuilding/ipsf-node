@@ -37,5 +37,6 @@ export function getIpfsStorageConfig(env = process.env, { existsSync = fs.exists
     defaultSourceProject: env.IPFS_DEFAULT_SOURCE_PROJECT ?? null,
     cliPath: env.IPFS_CLI_PATH ?? resolveDefaultCliPath(existsSync),
     repoPath: env.IPFS_PATH ?? path.join(rootDir, ".local-ipfs"),
+    localOnly: ["1", "true", "yes", "on"].includes(String(env.IPFS_LOCAL_ONLY ?? "").trim().toLowerCase()),
   };
 }
