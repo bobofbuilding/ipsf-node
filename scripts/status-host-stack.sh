@@ -9,9 +9,9 @@ PID_DIR="$RUNTIME_DIR/pids"
 
 expected_pattern() {
   case "$1" in
-    ipfs-node) printf '%s\n' '/workspace/tools/kubo/ipfs daemon' ;;
-    ipfs-api-proxy) printf '%s\n' 'node scripts/start-ipfs-api-proxy.mjs' ;;
-    cloudflared) printf '%s\n' '/workspace/tools/cloudflared tunnel run' ;;
+    ipfs-node) printf '%s\n' '[/]workspace/tools/kubo/ipfs daemon' ;;
+    ipfs-api-proxy) printf '%s\n' '[/]workspace/projects/ipfs-evm-system/scripts/start-ipfs-api-proxy.mjs' ;;
+    cloudflared) printf '%s\n' '[/]workspace/tools/cloudflared tunnel run' ;;
     *) return 1 ;;
   esac
 }

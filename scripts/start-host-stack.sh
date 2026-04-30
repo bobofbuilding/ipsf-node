@@ -26,9 +26,9 @@ log_file() {
 
 expected_pattern() {
   case "$1" in
-    ipfs-node) printf '%s\n' '/workspace/tools/kubo/ipfs daemon' ;;
-    ipfs-api-proxy) printf '%s\n' 'node scripts/start-ipfs-api-proxy.mjs' ;;
-    cloudflared) printf '%s\n' '/workspace/tools/cloudflared tunnel run' ;;
+    ipfs-node) printf '%s\n' '[/]workspace/tools/kubo/ipfs daemon' ;;
+    ipfs-api-proxy) printf '%s\n' '[/]workspace/projects/ipfs-evm-system/scripts/start-ipfs-api-proxy.mjs' ;;
+    cloudflared) printf '%s\n' '[/]workspace/tools/cloudflared tunnel run' ;;
     *) return 1 ;;
   esac
 }
@@ -71,7 +71,7 @@ is_running() {
 
 start_service() {
   local name="$1"
-  local command="$2"
+  shift
   local pidf logf
   pidf="$(pid_file "$name")"
   logf="$(log_file "$name")"
@@ -82,7 +82,7 @@ start_service() {
   fi
 
   rm -f "$pidf"
-  bash -lc "cd '$ROOT_DIR' && nohup $command >>'$logf' 2>&1 < /dev/null & echo \$! > '$pidf'"
+  bash "$SCRIPT_DIR/launch-detached.sh" "$ROOT_DIR" "$logf" "$@" >"$pidf"
   sleep 2
   local pid=""
   pid="$(find_running_pid "$name" || true)"
@@ -97,9 +97,9 @@ start_service() {
   return 1
 }
 
-start_service "ipfs-node" "./scripts/start-node.sh"
-start_service "ipfs-api-proxy" "npm run api:proxy"
-start_service "cloudflared" "npm run tunnel:start"
+start_service "ipfs-node" ./scripts/start-node.sh
+start_service "ipfs-api-proxy" npm run api:proxy
+start_service "cloudflared" npm run tunnel:start
 
 echo
 bash "$SCRIPT_DIR/status-host-stack.sh"

@@ -129,6 +129,9 @@ These keep pidfiles and logs under `.runtime-host/`. Use the host-level commands
 When `systemd` is not available on the host, use the long-running supervisor instead:
 
 - `npm run host:supervisor`
+- `npm run host:supervisor:start`
+- `npm run host:supervisor:status`
+- `npm run host:supervisor:stop`
 
 That keeps the Kubo daemon, local auth proxy, and Cloudflare tunnel under one parent process and restarts them if they exit. It also writes runtime state to `.runtime-host/supervisor-state.json`.
 
@@ -141,6 +144,8 @@ Recommended `@reboot` entry:
 ```bash
 @reboot /workspace/projects/ipfs-evm-system/scripts/start-host-supervisor.sh
 ```
+
+When the tunnel is launched from `IPFS_CLOUDFLARED_TUNNEL_TOKEN`, the startup script now materializes a `0600` runtime token file under `.runtime-host/cloudflared-token` so the raw token does not stay in the cloudflared argv or logs. `host:stack:stop` and `host:supervisor:stop` remove that runtime token file on shutdown.
 
 On hosts with systemd available, install persistent user units with:
 

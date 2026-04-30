@@ -4,12 +4,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PID_DIR="$ROOT_DIR/.runtime-host/pids"
+TOKEN_FILE="$ROOT_DIR/.runtime-host/cloudflared-token"
 
 expected_pattern() {
   case "$1" in
-    ipfs-node) printf '%s\n' '/workspace/tools/kubo/ipfs daemon' ;;
-    ipfs-api-proxy) printf '%s\n' 'node scripts/start-ipfs-api-proxy.mjs' ;;
-    cloudflared) printf '%s\n' '/workspace/tools/cloudflared tunnel run' ;;
+    ipfs-node) printf '%s\n' '[/]workspace/tools/kubo/ipfs daemon' ;;
+    ipfs-api-proxy) printf '%s\n' '[/]workspace/projects/ipfs-evm-system/scripts/start-ipfs-api-proxy.mjs' ;;
+    cloudflared) printf '%s\n' '[/]workspace/tools/cloudflared tunnel run' ;;
     *) return 1 ;;
   esac
 }
@@ -55,3 +56,4 @@ stop_service() {
 stop_service "cloudflared"
 stop_service "ipfs-api-proxy"
 stop_service "ipfs-node"
+rm -f "$TOKEN_FILE"
