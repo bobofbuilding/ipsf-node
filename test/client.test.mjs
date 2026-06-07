@@ -204,15 +204,25 @@ test("resolveCid returns gateway URL and health status", async () => {
   assert.equal(result.status, 200);
 });
 
-test("checkNodeHealth returns version and node id when RPC calls succeed", async () => {
+test("checkNodeHealth returns version, node id, and runtime telemetry when RPC calls succeed", async () => {
   const calls = [];
   const client = new IpfsStorageClient({
+    apiBaseUrl: "http://127.0.0.1:5001",
+    gatewayBaseUrl: "http://127.0.0.1:8080",
+    repoPath: "/mock/repo",
+    localOnly: true,
     fetchImpl: async (url) => {
       calls.push(url);
       if (url.includes("/version")) {
         return createJsonResponse({ Version: "0.30.0" });
       }
-      return createJsonResponse({ ID: "node-abc" });
+      if (url.includes("/id")) {
+        return createJsonResponse({ ID: "node-abc" });
+      }
+      if (url.includes("Addresses.API")) {
+        return createJsonResponse({ Value: "/ip4/127.0.0.1/tcp/5001" });
+      }
+      return createJsonResponse({ Value: "/ip4/127.0.0.1/tcp/8080" });
     },
   });
 
@@ -221,7 +231,16 @@ test("checkNodeHealth returns version and node id when RPC calls succeed", async
   assert.equal(result.available, true);
   assert.equal(result.version, "0.30.0");
   assert.equal(result.id, "node-abc");
-  assert.equal(calls.length, 2);
+  assert.equal(result.nodeMode, "managed");
+  assert.equal(result.apiBaseUrl, "http://127.0.0.1:5001");
+  assert.equal(result.gatewayBaseUrl, "http://127.0.0.1:8080");
+  assert.equal(result.configuredApiAddress, "/ip4/127.0.0.1/tcp/5001");
+  assert.equal(result.configuredGatewayAddress, "/ip4/127.0.0.1/tcp/8080");
+  assert.equal(result.configuredApiPort, 5001);
+  assert.equal(result.configuredGatewayPort, 8080);
+  assert.equal(result.localOnly, true);
+  assert.equal(result.repoPath, "/mock/repo");
+  assert.equal(calls.length, 4);
 });
 
 test("ensurePinned polls until the cid appears", async () => {

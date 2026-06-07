@@ -41,6 +41,7 @@ Out of scope for now:
 - generic sequencing infrastructure
 - moving all project logic into the IPFS project
 - hosted multi-node orchestration beyond the first local-plus-recovery model
+- desktop browser, tray, DNS, or local TLS ownership inspired by NeoMist unless a later operator requirement makes it necessary
 
 ## Project Shape
 
@@ -194,6 +195,11 @@ The first milestone is a repository-ready shared IPFS storage project that inclu
 - Should the shared library later ship dual ESM and CJS entrypoints, or stay ESM-only?
 - What backup pin target should be used after the first local recovery-artifact model?
 - Which Bitlogic artifact types should be treated as the first long-lived retention policy use case?
+- Should contenthash resolution helpers be added as a separate optional layer, or stay out until `crypto-directory` or another consumer needs trust-minimized ENS/IPNS resolution?
+
+## External Pattern Intake
+
+NeoMist is tracked as a reference for local-first ENS/IPFS ergonomics in `docs/neomist-digest.md`. Its useful patterns are local Kubo detection, loopback-only serving, explicit gateway routing, resolver caching, runtime version reporting, and installer verification. Its desktop app, tray, DNS, TLS, and light-client scope remain deferred so this project stays a small shared storage library.
 
 ## Deliverables
 

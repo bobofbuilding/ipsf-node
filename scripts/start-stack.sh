@@ -7,9 +7,9 @@ source "$SCRIPT_DIR/lib-stack.sh"
 
 load_env
 
-start_bg "ipfs-node" "cd '$STACK_ROOT_DIR' && ./scripts/start-node.sh"
-start_bg "ipfs-api-proxy" "cd '$STACK_ROOT_DIR' && npm run api:proxy"
-start_bg "cloudflared" "cd '$STACK_ROOT_DIR' && npm run tunnel:start"
+start_bg "ipfs-node" ./scripts/start-node.sh
+start_bg "ipfs-api-proxy" npm run api:proxy
+start_bg "cloudflared" npm run tunnel:start
 
 echo
 status_bg "ipfs-node"

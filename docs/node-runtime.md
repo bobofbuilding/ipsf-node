@@ -39,6 +39,8 @@ cd /workspace/projects/ipfs-evm-system
 npm run node:preflight
 npm run node:wait
 npm run node:check
+npm run stack:doctor
+npm run stack:doctor -- --json
 ```
 
 Expected result when the node is healthy:
@@ -46,6 +48,13 @@ Expected result when the node is healthy:
 - `ipfs-node:available`
 - node version
 - node id
+- runtime mode: `managed`, `local`, `external`, or `unknown`
+- configured API and gateway base URLs
+- Kubo API and gateway multiaddrs when the config RPC is available
+- parsed API and gateway ports
+- `localOnly` and repo path when configured
+- `stack:doctor` summary for process state, gateway reachability, proxy auth mode, and optional tunnel status
+- `stack:doctor -- --json` machine-readable report for dashboards and Bob ingestion
 
 ## Start Command
 

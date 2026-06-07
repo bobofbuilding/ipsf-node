@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { runCheckNode } from "../scripts/check-node.mjs";
+import { runStackDoctor } from "../scripts/stack-doctor.mjs";
 import { runRecoveryExport, timestampUtc } from "../scripts/export-recovery-artifacts.mjs";
 import { runPreflight } from "../scripts/preflight-node.mjs";
 import { runPublishPath } from "../scripts/publish-path.mjs";
@@ -55,7 +56,20 @@ test("runCheckNode reports healthy node details", async () => {
   const err = [];
   const exitCode = await runCheckNode({
     client: {
-      checkNodeHealth: async () => ({ available: true, version: "1.0.0", id: "node-123" }),
+      checkNodeHealth: async () => ({
+        available: true,
+        version: "1.0.0",
+        id: "node-123",
+        nodeMode: "managed",
+        apiBaseUrl: "http://127.0.0.1:5001",
+        gatewayBaseUrl: "http://127.0.0.1:8080",
+        configuredApiAddress: "/ip4/127.0.0.1/tcp/5001",
+        configuredGatewayAddress: "/ip4/127.0.0.1/tcp/8080",
+        configuredApiPort: 5001,
+        configuredGatewayPort: 8080,
+        localOnly: true,
+        repoPath: "/mock/repo",
+      }),
     },
     stdout: (line) => out.push(line),
     stderr: (line) => err.push(line),
@@ -63,7 +77,20 @@ test("runCheckNode reports healthy node details", async () => {
 
   assert.equal(exitCode, 0);
   assert.deepEqual(err, []);
-  assert.deepEqual(out, ["ipfs-node:available", "version=1.0.0", "id=node-123"]);
+  assert.deepEqual(out, [
+    "ipfs-node:available",
+    "version=1.0.0",
+    "id=node-123",
+    "mode=managed",
+    "api=http://127.0.0.1:5001",
+    "gateway=http://127.0.0.1:8080",
+    "apiAddress=/ip4/127.0.0.1/tcp/5001",
+    "gatewayAddress=/ip4/127.0.0.1/tcp/8080",
+    "apiPort=5001",
+    "gatewayPort=8080",
+    "localOnly=true",
+    "repoPath=/mock/repo",
+  ]);
 });
 
 test("runCheckNode reports unavailable node errors", async () => {
@@ -800,3 +827,145 @@ test("getIpfsStorageConfig reads IPFS API auth env vars", () => {
   assert.equal(config.defaultSourceProject, "ipfs-evm-system");
   assert.equal(config.localOnly, true);
 });
+
+test("runStackDoctor reports an ok stack", async () => {
+  const out = [];
+  const err = [];
+  const proc = {
+    "111": "node /workspace/tools/kubo/ipfs daemon",
+    "222": "node /workspace/projects/ipfs-evm-system/scripts/start-ipfs-api-proxy.mjs",
+    "333": "/workspace/tools/cloudflared tunnel run",
+  };
+  const files = new Map([
+    ["/workspace/projects/ipfs-evm-system/.runtime/pids/ipfs-node.pid", "111"],
+    ["/workspace/projects/ipfs-evm-system/.runtime/pids/ipfs-api-proxy.pid", "222"],
+    ["/workspace/projects/ipfs-evm-system/.runtime/pids/cloudflared.pid", "333"],
+  ]);
+
+  const exitCode = await runStackDoctor({
+    env: { IPFS_API_BEARER_TOKEN: "token" },
+    config: {
+      gatewayBaseUrl: "http://127.0.0.1:8080",
+      apiProxyPort: "5002",
+    },
+    client: {
+      checkNodeHealth: async () => ({ available: true, version: "0.40.1", nodeMode: "managed" }),
+    },
+    fetchImpl: async () => ({ status: 200 }),
+    readFileImpl: async (filePath) => {
+      const value = files.get(String(filePath));
+      if (value === undefined) {
+        const error = new Error("missing " + filePath);
+        error.code = "ENOENT";
+        throw error;
+      }
+      return value;
+    },
+    processStateImpl: async (pid) => ({ running: true, cmdline: proc[pid] }),
+    stdout: (line) => out.push(line),
+    stderr: (line) => err.push(line),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(err, []);
+  assert.equal(out[0], "stack-doctor:ok");
+  assert.ok(out.includes("node=available version=0.40.1 mode=managed"));
+  assert.ok(out.includes("gateway=reachable status=200 url=http://127.0.0.1:8080"));
+  assert.ok(out.includes("proxyAuth=bearer port=5002"));
+});
+
+
+test("runStackDoctor emits machine-readable JSON", async () => {
+  const out = [];
+  const err = [];
+  const files = new Map([
+    ["/workspace/projects/ipfs-evm-system/.runtime/pids/ipfs-node.pid", "111"],
+    ["/workspace/projects/ipfs-evm-system/.runtime/pids/ipfs-api-proxy.pid", "222"],
+    ["/workspace/projects/ipfs-evm-system/.runtime/pids/cloudflared.pid", "333"],
+  ]);
+  const proc = {
+    "111": "node /workspace/tools/kubo/ipfs daemon",
+    "222": "node /workspace/projects/ipfs-evm-system/scripts/start-ipfs-api-proxy.mjs",
+    "333": "/workspace/tools/cloudflared tunnel run",
+  };
+
+  const exitCode = await runStackDoctor({
+    argv: ["--json"],
+    env: { IPFS_API_BEARER_TOKEN: "token" },
+    config: {
+      apiBaseUrl: "http://127.0.0.1:5001",
+      gatewayBaseUrl: "http://127.0.0.1:8080",
+      apiProxyPort: "5002",
+      apiProxyUpstreamUrl: "http://127.0.0.1:5001",
+      repoPath: "/mock/repo",
+    },
+    client: {
+      checkNodeHealth: async () => ({
+        available: true,
+        version: "0.40.1",
+        id: "node-abc",
+        nodeMode: "managed",
+        configuredGatewayPort: 8080,
+      }),
+    },
+    fetchImpl: async () => ({ status: 200 }),
+    readFileImpl: async (filePath) => {
+      const value = files.get(String(filePath));
+      if (value === undefined) {
+        const error = new Error("missing " + filePath);
+        error.code = "ENOENT";
+        throw error;
+      }
+      return value;
+    },
+    processStateImpl: async (pid) => ({ running: true, cmdline: proc[pid] }),
+    stdout: (line) => out.push(line),
+    stderr: (line) => err.push(line),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(err, []);
+  assert.equal(out.length, 1);
+  const payload = JSON.parse(out[0]);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.status, "ok");
+  assert.deepEqual(payload.failures, []);
+  assert.equal(payload.processes.length, 3);
+  assert.equal(payload.node.version, "0.40.1");
+  assert.equal(payload.node.mode, "managed");
+  assert.equal(payload.gateway.reachable, true);
+  assert.equal(payload.proxy.authMode, "bearer");
+  assert.equal(payload.proxy.port, "5002");
+});
+
+test("runStackDoctor fails when required health checks fail", async () => {
+  const out = [];
+  const err = [];
+  const exitCode = await runStackDoctor({
+    env: {},
+    config: {
+      gatewayBaseUrl: "http://127.0.0.1:8080",
+      apiProxyPort: "5002",
+    },
+    client: {
+      checkNodeHealth: async () => ({ available: false, version: null, nodeMode: "unknown" }),
+    },
+    fetchImpl: async () => {
+      throw new Error("connect ECONNREFUSED");
+    },
+    readFileImpl: async () => {
+      const error = new Error("missing pid");
+      error.code = "ENOENT";
+      throw error;
+    },
+    processStateImpl: async () => ({ running: false, reason: "missing-pid" }),
+    stdout: (line) => out.push(line),
+    stderr: (line) => err.push(line),
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(out[0], "stack-doctor:fail");
+  assert.ok(out.includes("warnings=ipfs-api-proxy-stopped,cloudflared-stopped"));
+  assert.equal(err[0], "failures=ipfs-node-stopped,node-unavailable,gateway-unreachable,proxy-auth-missing");
+});
+

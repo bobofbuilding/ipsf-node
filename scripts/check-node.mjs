@@ -21,6 +21,17 @@ export async function runCheckNode({
   stdout("ipfs-node:available");
   stdout(`version=${health.version ?? "unknown"}`);
   stdout(`id=${health.id ?? "unknown"}`);
+  stdout(`mode=${health.nodeMode ?? "unknown"}`);
+  stdout(`api=${health.apiBaseUrl ?? "unknown"}`);
+  stdout(`gateway=${health.gatewayBaseUrl ?? "unknown"}`);
+  stdout(`apiAddress=${health.configuredApiAddress ?? "unknown"}`);
+  stdout(`gatewayAddress=${health.configuredGatewayAddress ?? "unknown"}`);
+  stdout(`apiPort=${health.configuredApiPort ?? "unknown"}`);
+  stdout(`gatewayPort=${health.configuredGatewayPort ?? "unknown"}`);
+  stdout(`localOnly=${health.localOnly === true ? "true" : "false"}`);
+  if (health.repoPath) {
+    stdout(`repoPath=${health.repoPath}`);
+  }
   return 0;
 }
 

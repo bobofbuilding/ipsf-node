@@ -20,48 +20,116 @@ load_env() {
 }
 
 pid_file_for() {
-  printf '%s/%s.pid\n' "$STACK_PID_DIR" "$1"
+  printf '%s/%s.pid
+' "$STACK_PID_DIR" "$1"
 }
 
 log_file_for() {
-  printf '%s/%s.log\n' "$STACK_LOG_DIR" "$1"
+  printf '%s/%s.log
+' "$STACK_LOG_DIR" "$1"
 }
 
-is_running() {
-  local pid_file="$1"
-  if [ ! -f "$pid_file" ]; then
-    return 1
-  fi
+expected_pattern() {
+  case "$1" in
+    ipfs-node) printf '%s
+' '(/workspace/tools/kubo/ipfs|/\.tools/kubo/ipfs|(^| )ipfs) daemon' ;;
+    ipfs-api-proxy) printf '%s
+' 'start-ipfs-api-proxy[.]mjs' ;;
+    cloudflared) printf '%s
+' 'cloudflared.* tunnel' ;;
+    *) return 1 ;;
+  esac
+}
 
-  local pid
-  pid="$(cat "$pid_file")"
+process_is_alive() {
+  local pid="$1"
   if [ -z "$pid" ]; then
     return 1
   fi
 
-  kill -0 "$pid" >/dev/null 2>&1
+  if ! kill -0 "$pid" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  local state
+  state="$(ps -p "$pid" -o stat= 2>/dev/null | tr -d '[:space:]')"
+  if [ -z "$state" ] || [[ "$state" == Z* ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
+pid_matches_name() {
+  local name="$1"
+  local pid="$2"
+  local pattern cmdline
+  pattern="$(expected_pattern "$name")" || return 1
+  process_is_alive "$pid" || return 1
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  cmdline="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
+  [ -n "$cmdline" ] || return 1
+  printf '%s
+' "$cmdline" | grep -Eq "$pattern"
+}
+
+find_running_pid() {
+  local name="$1"
+  local pattern pid
+  pattern="$(expected_pattern "$name")" || return 1
+  while read -r pid; do
+    if [ -n "$pid" ] && pid_matches_name "$name" "$pid"; then
+      printf '%s
+' "$pid"
+      return 0
+    fi
+  done < <(pgrep -f "$pattern" || true)
+  return 1
+}
+
+is_running() {
+  local name="$1"
+  local pid_file="$2"
+  local pid=""
+
+  if [ -f "$pid_file" ]; then
+    pid="$(cat "$pid_file")"
+  fi
+
+  if [ -n "$pid" ] && pid_matches_name "$name" "$pid"; then
+    return 0
+  fi
+
+  pid="$(find_running_pid "$name" || true)"
+  [ -n "$pid" ] || return 1
+  echo "$pid" >"$pid_file"
+  return 0
 }
 
 start_bg() {
   local name="$1"
-  local command="$2"
-  local pid_file log_file
+  shift
+  local pid_file log_file launcher_pid service_pid
   pid_file="$(pid_file_for "$name")"
   log_file="$(log_file_for "$name")"
 
-  if is_running "$pid_file"; then
+  if is_running "$name" "$pid_file"; then
     echo "$name already running (pid $(cat "$pid_file"))"
     return 0
   fi
 
   rm -f "$pid_file"
-  nohup bash -lc "$command" >>"$log_file" 2>&1 &
-  local pid=$!
-  echo "$pid" >"$pid_file"
-  sleep 1
+  launcher_pid="$(bash "$STACK_SCRIPT_DIR/launch-detached.sh" "$STACK_ROOT_DIR" "$log_file" "$@")"
+  echo "$launcher_pid" >"$pid_file"
+  sleep 2
 
-  if kill -0 "$pid" >/dev/null 2>&1; then
-    echo "started $name (pid $pid)"
+  service_pid="$(find_running_pid "$name" || true)"
+  if [ -n "$service_pid" ]; then
+    echo "$service_pid" >"$pid_file"
+  fi
+
+  if is_running "$name" "$pid_file"; then
+    echo "started $name (pid $(cat "$pid_file"))"
     return 0
   fi
 
@@ -71,21 +139,27 @@ start_bg() {
 
 stop_bg() {
   local name="$1"
-  local pid_file
+  local pid_file pid
   pid_file="$(pid_file_for "$name")"
+  pid=""
 
-  if ! is_running "$pid_file"; then
+  if [ -f "$pid_file" ]; then
+    pid="$(cat "$pid_file")"
+  fi
+
+  if ! { [ -n "$pid" ] && pid_matches_name "$name" "$pid"; }; then
+    pid="$(find_running_pid "$name" || true)"
+  fi
+
+  if [ -z "$pid" ]; then
     rm -f "$pid_file"
     echo "$name not running"
     return 0
   fi
 
-  local pid
-  pid="$(cat "$pid_file")"
   kill "$pid" >/dev/null 2>&1 || true
-
   for _ in 1 2 3 4 5; do
-    if ! kill -0 "$pid" >/dev/null 2>&1; then
+    if ! process_is_alive "$pid"; then
       rm -f "$pid_file"
       echo "stopped $name"
       return 0
@@ -104,9 +178,10 @@ status_bg() {
   pid_file="$(pid_file_for "$name")"
   log_file="$(log_file_for "$name")"
 
-  if is_running "$pid_file"; then
+  if is_running "$name" "$pid_file"; then
     echo "$name: running (pid $(cat "$pid_file")) log=$log_file"
   else
+    rm -f "$pid_file"
     echo "$name: stopped log=$log_file"
   fi
 }

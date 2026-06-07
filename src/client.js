@@ -12,6 +12,8 @@ import { collectDirectoryFiles, readPathAsBlob } from "./files.js";
  * @property {string | null} [apiBearerToken]
  * @property {string | null} [apiBasicAuthUsername]
  * @property {string | null} [apiBasicAuthPassword]
+ * @property {string} [repoPath]
+ * @property {boolean} [localOnly]
  */
 
 /**
@@ -36,6 +38,8 @@ export class IpfsStorageClient {
     this.apiBearerToken = typeof options.apiBearerToken === "string" ? options.apiBearerToken.trim() : "";
     this.apiBasicAuthUsername = typeof options.apiBasicAuthUsername === "string" ? options.apiBasicAuthUsername.trim() : "";
     this.apiBasicAuthPassword = typeof options.apiBasicAuthPassword === "string" ? options.apiBasicAuthPassword.trim() : "";
+    this.repoPath = typeof options.repoPath === "string" ? options.repoPath.trim() : "";
+    this.localOnly = Boolean(options.localOnly);
 
     if (typeof this.fetchImpl !== "function") {
       throw new Error("IpfsStorageClient requires a fetch implementation.");
@@ -246,23 +250,53 @@ export class IpfsStorageClient {
   async checkNodeHealth() {
     const versionUrl = this.#rpcUrl("/api/v0/version");
     const idUrl = this.#rpcUrl("/api/v0/id");
+    const apiAddressUrl = this.#rpcUrl("/api/v0/config", { arg: "Addresses.API" });
+    const gatewayAddressUrl = this.#rpcUrl("/api/v0/config", { arg: "Addresses.Gateway" });
 
     try {
-      const [version, identity] = await Promise.all([
+      const [version, identity, apiAddress, gatewayAddress] = await Promise.all([
         this.#postJson(versionUrl),
         this.#postJson(idUrl),
+        this.#postJsonOptional(apiAddressUrl),
+        this.#postJsonOptional(gatewayAddressUrl),
       ]);
+      const configuredApiAddress = extractConfigValue(apiAddress);
+      const configuredGatewayAddress = extractConfigValue(gatewayAddress);
 
       return {
         available: true,
         version: version.Version ?? null,
         id: identity.ID ?? null,
+        nodeMode: inferNodeMode({
+          apiBaseUrl: this.apiBaseUrl,
+          gatewayBaseUrl: this.gatewayBaseUrl,
+          configuredApiAddress,
+          configuredGatewayAddress,
+          repoPath: this.repoPath,
+        }),
+        apiBaseUrl: this.apiBaseUrl,
+        gatewayBaseUrl: this.gatewayBaseUrl,
+        configuredApiAddress,
+        configuredGatewayAddress,
+        configuredApiPort: parseMultiaddrTcpPort(configuredApiAddress),
+        configuredGatewayPort: parseMultiaddrTcpPort(configuredGatewayAddress),
+        localOnly: this.localOnly,
+        repoPath: this.repoPath || null,
       };
     } catch (error) {
       return {
         available: false,
         version: null,
         id: null,
+        nodeMode: "unknown",
+        apiBaseUrl: this.apiBaseUrl,
+        gatewayBaseUrl: this.gatewayBaseUrl,
+        configuredApiAddress: null,
+        configuredGatewayAddress: null,
+        configuredApiPort: null,
+        configuredGatewayPort: null,
+        localOnly: this.localOnly,
+        repoPath: this.repoPath || null,
         error: error instanceof Error ? error.message : String(error),
       };
     }
@@ -349,6 +383,17 @@ export class IpfsStorageClient {
     return response.json();
   }
 
+  /**
+   * @param {string} url
+   */
+  async #postJsonOptional(url) {
+    try {
+      return await this.#postJson(url);
+    } catch (_error) {
+      return null;
+    }
+  }
+
   #apiAuthHeaders() {
     if (this.apiBearerToken) {
       return {
@@ -394,3 +439,80 @@ export async function detectPublishTarget(fileOrDirectoryPath) {
     isFile: fileStats.isFile(),
   };
 }
+
+/**
+ * @param {unknown} response
+ */
+function extractConfigValue(response) {
+  if (!response || typeof response !== "object" || !("Value" in response)) {
+    return null;
+  }
+
+  const value = response.Value;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * @param {string | null} multiaddr
+ */
+function parseMultiaddrTcpPort(multiaddr) {
+  if (!multiaddr) {
+    return null;
+  }
+
+  const match = multiaddr.match(/\/tcp\/(\d+)(?:\/|$)/);
+  if (!match) {
+    return null;
+  }
+
+  const port = Number(match[1]);
+  return Number.isInteger(port) ? port : null;
+}
+
+/**
+ * @param {{
+ *   apiBaseUrl: string,
+ *   gatewayBaseUrl: string,
+ *   configuredApiAddress: string | null,
+ *   configuredGatewayAddress: string | null,
+ *   repoPath: string,
+ * }} input
+ */
+function inferNodeMode(input) {
+  const apiLoopback = isLoopbackUrl(input.apiBaseUrl) && isLoopbackMultiaddr(input.configuredApiAddress);
+  const gatewayLoopback = isLoopbackUrl(input.gatewayBaseUrl) && isLoopbackMultiaddr(input.configuredGatewayAddress);
+
+  if (!apiLoopback || !gatewayLoopback) {
+    return "external";
+  }
+
+  if (input.repoPath) {
+    return "managed";
+  }
+
+  return "local";
+}
+
+/**
+ * @param {string} value
+ */
+function isLoopbackUrl(value) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+  } catch (_error) {
+    return false;
+  }
+}
+
+/**
+ * @param {string | null} value
+ */
+function isLoopbackMultiaddr(value) {
+  if (!value) {
+    return true;
+  }
+
+  return value.includes("/ip4/127.0.0.1/") || value.includes("/ip6/::1/");
+}
+

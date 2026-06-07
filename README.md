@@ -25,6 +25,7 @@ It is infrastructure for the other projects, not a separate product.
 - Plan: `docs/processes/plan.md`
 - Design: `docs/processes/design.md`
 - Tasks: `docs/processes/tasks.md`
+- NeoMist digest: `docs/neomist-digest.md`
 
 ## Package Surface
 
@@ -114,6 +115,8 @@ For repo-local process management without systemd, use:
 
 - `npm run stack:start`
 - `npm run stack:status`
+- `npm run stack:doctor`
+- `npm run stack:doctor -- --json`
 - `npm run stack:stop`
 
 These keep pidfiles and logs under `.runtime/`.

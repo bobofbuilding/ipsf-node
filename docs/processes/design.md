@@ -256,7 +256,19 @@ Likely needs:
 - helper scripts for publish and health checks
 - a clean standalone Git repository boundary
 
-## 11. Implementation Recommendation
+## 11. External Pattern Intake
+
+NeoMist is a reference implementation for local-first ENS/IPFS browsing. The useful design lessons for this project are:
+
+- separate contenthash resolution from CID publish/pin operations
+- prefer loopback-only writable surfaces by default
+- report runtime component versions and node mode clearly
+- detect external Kubo before starting a managed node
+- keep installer and release verification explicit
+
+The desktop app, tray, local DNS, trusted TLS, Helios, and packaged browser experience are outside this project's current scope. They should stay as optional future research until a consumer needs them.
+
+## 12. Implementation Recommendation
 
 The first implementation should prioritize simplicity:
 
@@ -274,6 +286,6 @@ Defer:
 - large metadata databases
 - service-first architecture unless the library proves insufficient
 
-## 12. Summary
+## 13. Summary
 
 `ipfs-evm-system` should be the workspace storage utility for IPFS. It runs the node, exposes a small shared library for publish and resolve operations, includes enough package and test structure for downstream use, and supports `crypto-directory`, `skillmesh`, `bitlogic`, `nftfactory`, and future projects without taking over their workflows.
