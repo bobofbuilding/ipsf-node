@@ -11,13 +11,23 @@ export function normalizeIpfsCid(value) {
 }
 
 /**
+ * @param {string} value
+ */
+export function normalizeIpfsPath(value) {
+  const normalizedCid = normalizeIpfsCid(value);
+  if (!normalizedCid) {
+    throw new Error("IPFS path normalization requires a CID.");
+  }
+  return "/ipfs/" + normalizedCid;
+}
+
+/**
  * @param {{ gatewayBaseUrl: string, cid: string, path?: string }} input
  */
 export function buildGatewayUrl(input) {
-  const normalizedCid = normalizeIpfsCid(input.cid);
   const normalizedBaseUrl = input.gatewayBaseUrl.replace(/\/+$/, "");
   const suffix = input.path ? `/${input.path.replace(/^\/+/, "")}` : "";
-  return `${normalizedBaseUrl}/ipfs/${normalizedCid}${suffix}`;
+  return `${normalizedBaseUrl}${normalizeIpfsPath(input.cid)}${suffix}`;
 }
 
 /**

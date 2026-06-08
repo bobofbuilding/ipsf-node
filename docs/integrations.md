@@ -2,6 +2,10 @@
 
 See also: `docs/smoke-validation.md` and `npm run smoke:bittrees` for the cross-project publish flow.
 
+## Shared Package Boundary
+
+The shared package owns IPFS publish, pin, health, and gateway normalization helpers. Public gateway helpers accept `ipfs://`, `/ipfs/`, and bare CID inputs and emit canonical `/ipfs/<cid>` gateway paths. Consumer projects keep product validation, access rules, durable CID records, ENS updates, storefront behavior, and project-specific release evidence in their own repositories.
+
 
 ## Crypto Directory
 

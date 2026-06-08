@@ -197,8 +197,9 @@ test("resolveCid returns gateway URL and health status", async () => {
     fetchImpl: async () => ({ ok: true, status: 200 }),
   });
 
-  const result = await client.resolveCid({ cid: "bafy-resolve", path: "/artifact.json" });
+  const result = await client.resolveCid({ cid: "/ipfs/bafy-resolve", path: "/artifact.json" });
 
+  assert.equal(result.cid, "bafy-resolve");
   assert.equal(result.gatewayUrl, "http://127.0.0.1:8080/ipfs/bafy-resolve/artifact.json");
   assert.equal(result.available, true);
   assert.equal(result.status, 200);

@@ -145,6 +145,7 @@ export function createIpfsApiProxyServer(input?: {
 };
 
 export function normalizeIpfsCid(value: string): string;
+export function normalizeIpfsPath(value: string): string;
 export function buildGatewayUrl(input: { gatewayBaseUrl: string; cid: string; path?: string }): string;
 export function resolveJsonFromGateway(input: {
   gatewayBaseUrl: string;

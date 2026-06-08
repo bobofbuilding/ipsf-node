@@ -36,6 +36,7 @@ Current package exports:
 - `getIpfsStorageConfig`
 - `buildGatewayUrl`
 - `normalizeIpfsCid`
+- `normalizeIpfsPath`
 - `resolveJsonFromGateway`
 - `createArtifactMetadata`
 - `publishProjectPath`

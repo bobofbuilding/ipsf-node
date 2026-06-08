@@ -1,6 +1,7 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
 
+import { buildGatewayUrl, normalizeIpfsCid } from "./gateway.js";
 import { collectDirectoryFiles, readPathAsBlob } from "./files.js";
 
 /**
@@ -200,12 +201,12 @@ export class IpfsStorageClient {
    * @param {{ cid: string, path?: string }} input
    */
   async resolveCid(input) {
-    const suffix = input.path ? `/${input.path.replace(/^\/+/, "")}` : "";
-    const gatewayUrl = `${this.gatewayBaseUrl}/ipfs/${input.cid}${suffix}`;
-    const health = await this.checkCidHealth({ cid: input.cid, path: input.path });
+    const normalizedCid = normalizeIpfsCid(input.cid);
+    const gatewayUrl = buildGatewayUrl({ gatewayBaseUrl: this.gatewayBaseUrl, cid: normalizedCid, path: input.path });
+    const health = await this.checkCidHealth({ cid: normalizedCid, path: input.path });
 
     return {
-      cid: input.cid,
+      cid: normalizedCid,
       path: input.path ?? null,
       gatewayUrl,
       available: health.available,
@@ -217,15 +218,15 @@ export class IpfsStorageClient {
    * @param {{ cid: string, path?: string }} input
    */
   async checkCidHealth(input) {
-    const suffix = input.path ? `/${input.path.replace(/^\/+/, "")}` : "";
-    const gatewayUrl = `${this.gatewayBaseUrl}/ipfs/${input.cid}${suffix}`;
+    const normalizedCid = normalizeIpfsCid(input.cid);
+    const gatewayUrl = buildGatewayUrl({ gatewayBaseUrl: this.gatewayBaseUrl, cid: normalizedCid, path: input.path });
 
     let response;
     try {
       response = await this.fetchImpl(gatewayUrl, { method: "HEAD" });
     } catch (error) {
       return {
-        cid: input.cid,
+        cid: normalizedCid,
         path: input.path ?? null,
         available: false,
         status: null,
@@ -239,7 +240,7 @@ export class IpfsStorageClient {
     }
 
     return {
-      cid: input.cid,
+      cid: normalizedCid,
       path: input.path ?? null,
       available: response.ok,
       status: response.status,
@@ -422,7 +423,7 @@ export class IpfsStorageClient {
       name: record.Name,
       size: record.Size ? Number(record.Size) : undefined,
       sourceProject: sourceProject ?? this.defaultSourceProject,
-      gatewayUrl: `${this.gatewayBaseUrl}/ipfs/${record.Hash}`,
+      gatewayUrl: buildGatewayUrl({ gatewayBaseUrl: this.gatewayBaseUrl, cid: record.Hash }),
       metadata,
     };
   }

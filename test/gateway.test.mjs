@@ -1,12 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildGatewayUrl, normalizeIpfsCid, resolveJsonFromGateway } from "../src/gateway.js";
+import { buildGatewayUrl, normalizeIpfsCid, normalizeIpfsPath, resolveJsonFromGateway } from "../src/gateway.js";
 
 test("normalizeIpfsCid removes ipfs protocol and path prefixes", () => {
   assert.equal(normalizeIpfsCid("ipfs://bafy123"), "bafy123");
   assert.equal(normalizeIpfsCid("/ipfs/bafy123"), "bafy123");
   assert.equal(normalizeIpfsCid("ipfs/bafy123"), "bafy123");
+  assert.equal(normalizeIpfsCid("ipfs://bafy123/dir/file.json"), "bafy123/dir/file.json");
+});
+
+test("normalizeIpfsPath returns a canonical gateway path", () => {
+  assert.equal(normalizeIpfsPath("bafy123"), "/ipfs/bafy123");
+  assert.equal(normalizeIpfsPath("ipfs://bafy123"), "/ipfs/bafy123");
+  assert.equal(normalizeIpfsPath("/ipfs/bafy123"), "/ipfs/bafy123");
+  assert.equal(normalizeIpfsPath("ipfs://bafy123/dir/file.json"), "/ipfs/bafy123/dir/file.json");
+  assert.throws(() => normalizeIpfsPath("   "), /IPFS path normalization requires a CID/);
 });
 
 test("buildGatewayUrl returns a gateway ipfs path", () => {

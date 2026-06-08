@@ -1,4 +1,5 @@
 export function normalizeIpfsCid(value: string): string;
+export function normalizeIpfsPath(value: string): string;
 
 export function buildGatewayUrl(input: {
   gatewayBaseUrl: string;
